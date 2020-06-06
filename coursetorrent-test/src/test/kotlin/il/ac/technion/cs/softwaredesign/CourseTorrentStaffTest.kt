@@ -12,7 +12,7 @@ import java.net.Socket
 import java.util.concurrent.CompletionException
 
 class CourseTorrentStaffTest {
-    private val injector = Guice.createInjector(CourseTorrentModule())
+    private val injector = Guice.createInjector(TestModule()) //TODO: CHANGE BACK TO CourseTorrentModule
     private val torrent = injector.getInstance<CourseTorrent>()
     private val debian = this::class.java.getResource("/debian-10.3.0-amd64-netinst.iso.torrent").readBytes()
     private val lame = this::class.java.getResource("/lame.torrent").readBytes()

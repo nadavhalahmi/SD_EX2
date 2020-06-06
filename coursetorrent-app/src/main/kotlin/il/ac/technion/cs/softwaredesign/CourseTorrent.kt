@@ -2,6 +2,12 @@
 
 package il.ac.technion.cs.softwaredesign
 
+import Coder
+import ITorrentHTTP
+import TorrentDict
+import TorrentList
+import TorrentParser
+import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.exceptions.PeerChokedException
 import il.ac.technion.cs.softwaredesign.exceptions.PeerConnectException
 import il.ac.technion.cs.softwaredesign.exceptions.PieceHashException
@@ -16,7 +22,9 @@ import java.util.concurrent.CompletableFuture
  * + Communication with trackers (announce, scrape).
  * + Communication with peers (downloading! uploading!)
  */
-class CourseTorrent {
+class CourseTorrent @Inject constructor(private val databases: Databases, private val torrentHTTP: ITorrentHTTP) {
+    private val parser = TorrentParser()
+    private val coder = Coder()
     /**
      * Load in the torrent metainfo file from [torrent]. The specification for these files can be found here:
      * [Metainfo File Structure](https://wiki.theory.org/index.php/BitTorrentSpecification#Metainfo_File_Structure).
@@ -29,7 +37,25 @@ class CourseTorrent {
      * @throws IllegalStateException If the infohash of [torrent] is already loaded.
      * @return The infohash of the torrent, i.e., the SHA-1 of the `info` key of [torrent].
      */
-    fun load(torrent: ByteArray): CompletableFuture<String> = TODO("Implement me!")
+    fun load(torrent: ByteArray): CompletableFuture<String>{
+        val infoValue: ByteArray
+        val dict: TorrentDict
+        try {
+            //infoValue = parser.getValueByKey(torrent, "info")
+            dict = parser.parse(torrent)
+            val infoRange = dict.getRange("info")
+            infoValue = torrent.copyOfRange(infoRange.startIndex(), infoRange.endIndex())
+        }catch (e: Exception){
+            throw IllegalArgumentException()
+        }
+        val infohash = coder.SHAsum(infoValue)
+        if(databases.torrentExists(infohash))
+            throw IllegalStateException()
+        databases.addTorrent(infohash, torrent, dict)
+        val res = CompletableFuture<String>()
+        res.complete(infohash)
+        return res
+    }
 
     /**
      * Remove the torrent identified by [infohash] from the system.
@@ -38,7 +64,12 @@ class CourseTorrent {
      *
      * @throws IllegalArgumentException If [infohash] is not loaded.
      */
-    fun unload(infohash: String): CompletableFuture<Unit> = TODO("Implement me!")
+    fun unload(infohash: String): CompletableFuture<Unit>{
+        if(!databases.torrentExists(infohash))
+            throw IllegalArgumentException()
+        databases.deleteTorrent(infohash)
+        return CompletableFuture<Unit>()
+    }
 
     /**
      * Return the announce URLs for the loaded torrent identified by [infohash].
@@ -53,7 +84,20 @@ class CourseTorrent {
      * @throws IllegalArgumentException If [infohash] is not loaded.
      * @return Tier lists of announce URLs.
      */
-    fun announces(infohash: String): CompletableFuture<List<List<String>>> = TODO("Implement me!")
+    fun announces(infohash: String): CompletableFuture<List<List<String>>> {
+        var lst: ByteArray? = databases.getTorrentField(infohash, "announce-list")
+        if(lst === null) {
+            lst = databases.getTorrentField(infohash, "announce")
+            if (lst === null)
+                throw IllegalArgumentException()
+            else
+                lst = "ll".toByteArray(Charsets.UTF_8) + lst + "ee".toByteArray(Charsets.UTF_8)
+        }
+        val resLst = ((parser.parseList(lst).value() as TorrentList).toList() as List<List<String>>)
+        val res = CompletableFuture<List<List<String>>>()
+        res.complete(resLst)
+        return res
+    }
 
     /**
      * Send an "announce" HTTP request to a single tracker of the torrent identified by [infohash], and update the
@@ -91,8 +135,73 @@ class CourseTorrent {
         uploaded: Long,
         downloaded: Long,
         left: Long
-    ): CompletableFuture<Int> =
-        TODO("Implement me!")
+    ): CompletableFuture<Int> {
+        val res = CompletableFuture<Int>()
+        if(!databases.torrentExists(infohash))
+            throw java.lang.IllegalArgumentException()
+        val randLen = 6
+        val charPool : List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
+        var announceList = announces(infohash = infohash).get()
+        var respDict : TorrentDict? = null
+        var newList = announceList.toMutableList()
+        if(event == TorrentEvent.STARTED) {
+            var k = 0
+            for(i in (announceList.indices).shuffled()){
+                newList[k] = announceList[i].shuffled()
+                k++
+            }
+            databases.updateAnnounce(infohash, newList)
+        }
+        for(l in newList){
+            for(tracker in l){
+                try {
+                    val params = HashMap<String, String>()
+                    params["info_hash"] = coder.binary_encode(infohash)
+                    params["event"] = event.toString().toLowerCase()
+                    params["uploaded"] = uploaded.toString()
+                    params["downloaded"] = downloaded.toString()
+                    params["left"] = left.toString()
+                    params["compact"] = "1"
+                    val randomString = (1..randLen)
+                            .map { kotlin.random.Random.nextInt(0, charPool.size) }
+                            .map(charPool::get)
+                            .joinToString("")
+                    val ids = coder.SHAsum(("206784258" + "314628090").toByteArray()).slice(0 until 6)
+                    params["peer_id"] = "-CS1000-$ids$randomString"
+                    var resp = torrentHTTP.get(tracker, params)
+                    respDict = parser.parse(resp)
+                    val peers = HashSet<KnownPeer>()
+                    val peersBytes = resp.copyOfRange(respDict["peers"]!!.startIndex(), respDict["peers"]!!.endIndex())
+                    if (peersBytes[0].toChar() == 'l') {
+                        val peersList = respDict["peers"]?.value() as TorrentList
+                        for (p in peersList.lst) {
+                            val currPeer = p.value() as TorrentDict
+                            val port = (currPeer["port"]?.value() as Long).toInt()
+                            val ip = currPeer["ip"]?.value() as String
+                            peers.add(KnownPeer(ip = ip, port = port, peerId = null))
+                        }
+                    } else {
+                        val start = (parser.parseBytes(peersBytes) { peersBytes[it].toChar() == ':' }).length + 1
+                        val end = peersBytes.size
+                        for (i in start until end step 6) {
+                            val (ip, port) = coder.get_ip_port(peersBytes.copyOfRange(i, i + 6))
+                            peers.add(KnownPeer(ip = ip, port = port, peerId = null))
+                        }
+                    }
+                    databases.updatePeersList(infohash, peersBytes, peers)
+                    if (respDict["interval"] != null)
+                        res.complete((respDict["interval"]?.value() as Long).toInt())
+                        return res
+                }catch (e: Throwable){
+                    continue
+                }
+            }
+        }
+        if(respDict != null)
+            throw TrackerException(respDict["failure reason"]?.value().toString())
+        else
+            throw TrackerException("generic announce exception") //TODO: check this works
+    }
 
     /**
      * Scrape all trackers identified by a torrent, and store the statistics provided. The specification for the scrape
@@ -105,7 +214,27 @@ class CourseTorrent {
      *
      * @throws IllegalArgumentException If [infohash] is not loaded.
      */
-    fun scrape(infohash: String): CompletableFuture<Unit> = TODO("Implement me!")
+    fun scrape(infohash: String): CompletableFuture<Unit> {
+        if(!databases.torrentExists(infohash))
+            throw java.lang.IllegalArgumentException()
+        val announceList: List<List<String>> = announces(infohash = infohash).get()
+        for(l in announceList){
+            for(tracker in l){
+                if(tracker.split('/').last().startsWith("announce")) {
+                    val lastIndex = tracker.lastIndexOf(char = '/')
+                    val scrape = tracker.slice(0..lastIndex) + "scrape" + tracker.slice((lastIndex + "/announce".length) until tracker.length)
+                    val params = HashMap<String, String>()
+                    params["info_hash"] = coder.binary_encode(infohash)
+                    var resp = torrentHTTP.get(scrape, params)
+                    val respDict = parser.parse(resp)
+                    val files = respDict["files"]?.value() as TorrentDict
+                    val stats = files[coder.string_to_hex(infohash)]?.value() as TorrentDict?
+                    databases.updateTracker(infohash ,tracker, stats)
+                }
+            }
+        }
+        return CompletableFuture<Unit>()
+    }
 
     /**
      * Invalidate a previously known peer for this torrent.
@@ -116,7 +245,12 @@ class CourseTorrent {
      *
      * @throws IllegalArgumentException If [infohash] is not loaded.
      */
-    fun invalidatePeer(infohash: String, peer: KnownPeer): CompletableFuture<Unit> = TODO("Implement me!")
+    fun invalidatePeer(infohash: String, peer: KnownPeer): CompletableFuture<Unit>{
+        if(!databases.torrentExists(infohash))
+            throw java.lang.IllegalArgumentException()
+        databases.invalidatePeer(infohash, peer)
+        return CompletableFuture<Unit>()
+    }
 
     /**
      * Return all known peers for the torrent identified by [infohash], in sorted order. This list should contain all
@@ -131,7 +265,37 @@ class CourseTorrent {
      * @throws IllegalArgumentException If [infohash] is not loaded.
      * @return Sorted list of known peers.
      */
-    fun knownPeers(infohash: String): CompletableFuture<List<KnownPeer>> = TODO("Implement me!")
+    fun knownPeers(infohash: String): CompletableFuture<List<KnownPeer>>{
+        val toReturn = CompletableFuture<List<KnownPeer>>()
+        if(!databases.torrentExists(infohash))
+            throw java.lang.IllegalArgumentException()
+        val res = HashSet<KnownPeer>()
+        val peersBytes = databases.getPeers(infohash)
+        if(peersBytes != null) {
+            if(peersBytes[0].toChar() == 'l'){
+                val peersList = parser.parseList(peersBytes).value() as TorrentList
+                for(p in peersList.lst){
+                    val currPeer = p.value() as TorrentDict
+                    val port = (currPeer["port"]?.value() as Long).toInt()
+                    val ip = currPeer["ip"]?.value() as String
+                    val peer = KnownPeer(ip, port, null)
+                    if(databases.peerIsValid(infohash, peer))
+                        res.add(peer)
+                }
+            } else {
+                val start = (parser.parseBytes(peersBytes) { peersBytes[it].toChar() == ':' }).length + 1
+                val end = peersBytes.size
+                for (i in start until end step 6) {
+                    val (ip, port) = coder.get_ip_port(peersBytes.copyOfRange(i, i + 6))
+                    val peer = KnownPeer(ip, port, null)
+                    if(databases.peerIsValid(infohash, peer))
+                        res.add(peer)
+                }
+            }
+        }
+        toReturn.complete(res.sortedWith(KnownPeerCompartor))
+        return toReturn
+    }
 
     /**
      * Return all known statistics from trackers of the torrent identified by [infohash]. The statistics displayed
@@ -151,7 +315,23 @@ class CourseTorrent {
      * @throws IllegalArgumentException If [infohash] is not loaded.
      * @return A mapping from tracker announce URL to statistics.
      */
-    fun trackerStats(infohash: String): CompletableFuture<Map<String, ScrapeData>> = TODO("Implement me!")
+    fun trackerStats(infohash: String): CompletableFuture<Map<String, ScrapeData>>{
+        val toReturn = CompletableFuture<Map<String, ScrapeData>>()
+        if(!databases.torrentExists(infohash))
+            throw java.lang.IllegalArgumentException()
+        val res = HashMap<String, ScrapeData>()
+        val announceList = announces(infohash).get()
+        for(l in announceList){
+            for(tracker in l){
+                val stats = databases.getTrackerStats(infohash, tracker)
+                if(stats != null){
+                    res[tracker] = stats
+                }
+            }
+        }
+        toReturn.complete(res)
+        return toReturn
+    }
 
     /**
      * Return information about the torrent identified by [infohash]. These statistics represent the current state
