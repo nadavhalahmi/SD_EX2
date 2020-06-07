@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="il.ac.technion.cs.softwaredesign.MyTest" tests="17" skipped="0" failures="9" errors="0" timestamp="2020-06-06T17:03:12" hostname="NADAV-OLD-LAPTO" time="2.418">
+<testsuite name="il.ac.technion.cs.softwaredesign.MyTest" tests="17" skipped="0" failures="9" errors="0" timestamp="2020-06-07T13:49:03" hostname="NADAV-LAPTOP" time="2.78">
   <properties/>
-  <testcase name="client announces to tracker()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="1.763"/>
-  <testcase name="sends interested message to peer after receiving a have message()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.011">
+  <testcase name="client announces to tracker()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="1.512"/>
+  <testcase name="sends interested message to peer after receiving a have message()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.02">
     <failure message="kotlin.NotImplementedError: An operation is not implemented: Implement me!" type="kotlin.NotImplementedError">kotlin.NotImplementedError: An operation is not implemented: Implement me!
 	at il.ac.technion.cs.softwaredesign.CourseTorrent.torrentStats(CourseTorrent.kt:347)
 	at il.ac.technion.cs.softwaredesign.MyTest.initiateRemotePeer(MyTest.kt:294)
@@ -97,8 +97,8 @@
 	at java.base/java.lang.Thread.run(Thread.java:832)
 </failure>
   </testcase>
-  <testcase name="check peers as list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.083"/>
-  <testcase name="sends choke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.007">
+  <testcase name="check peers as list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.077"/>
+  <testcase name="sends choke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.009">
     <failure message="kotlin.NotImplementedError: An operation is not implemented: Implement me!" type="kotlin.NotImplementedError">kotlin.NotImplementedError: An operation is not implemented: Implement me!
 	at il.ac.technion.cs.softwaredesign.CourseTorrent.torrentStats(CourseTorrent.kt:347)
 	at il.ac.technion.cs.softwaredesign.MyTest.initiateRemotePeer(MyTest.kt:294)
@@ -193,7 +193,7 @@
 	at java.base/java.lang.Thread.run(Thread.java:832)
 </failure>
   </testcase>
-  <testcase name="after receiving have message, a piece is marked as available()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.007">
+  <testcase name="after receiving have message, a piece is marked as available()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.002">
     <failure message="kotlin.NotImplementedError: An operation is not implemented: Implement me!" type="kotlin.NotImplementedError">kotlin.NotImplementedError: An operation is not implemented: Implement me!
 	at il.ac.technion.cs.softwaredesign.CourseTorrent.torrentStats(CourseTorrent.kt:347)
 	at il.ac.technion.cs.softwaredesign.MyTest.initiateRemotePeer(MyTest.kt:294)
@@ -288,9 +288,9 @@
 	at java.base/java.lang.Thread.run(Thread.java:832)
 </failure>
   </testcase>
-  <testcase name="after load, infohash calculated correctly()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.013"/>
-  <testcase name="check announce failure reason()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.045"/>
-  <testcase name="lame torrent is loaded, wrong file data is loaded, and recheck returns false()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.004">
+  <testcase name="after load, infohash calculated correctly()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.091"/>
+  <testcase name="check announce failure reason()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.063"/>
+  <testcase name="lame torrent is loaded, wrong file data is loaded, and recheck returns false()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.002">
     <failure message="kotlin.NotImplementedError: An operation is not implemented: Implement me!" type="kotlin.NotImplementedError">kotlin.NotImplementedError: An operation is not implemented: Implement me!
 	at il.ac.technion.cs.softwaredesign.CourseTorrent.loadFiles(CourseTorrent.kt:573)
 	at il.ac.technion.cs.softwaredesign.MyTest.lame torrent is loaded, wrong file data is loaded, and recheck returns false(MyTest.kt:189)
@@ -384,7 +384,7 @@
 	at java.base/java.lang.Thread.run(Thread.java:832)
 </failure>
   </testcase>
-  <testcase name="after shuffle still returns same announce list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.024"/>
+  <testcase name="after shuffle still returns same announce list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.051"/>
   <testcase name="exceptions are thrown inside the CompletableFuture()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.016">
     <failure message="org.opentest4j.AssertionFailedError: Unexpected exception thrown: java.lang.IllegalArgumentException" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: Unexpected exception thrown: java.lang.IllegalArgumentException
 	at org.junit.jupiter.api.AssertDoesNotThrow.createAssertionFailedError(AssertDoesNotThrow.java:83)
@@ -490,7 +490,7 @@ Caused by: java.lang.IllegalArgumentException
 	... 92 more
 </failure>
   </testcase>
-  <testcase name="starts listening and responds to connection and handshake()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.015">
+  <testcase name="starts listening and responds to connection and handshake()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.002">
     <failure message="kotlin.NotImplementedError: An operation is not implemented: Implement me!" type="kotlin.NotImplementedError">kotlin.NotImplementedError: An operation is not implemented: Implement me!
 	at il.ac.technion.cs.softwaredesign.CourseTorrent.torrentStats(CourseTorrent.kt:347)
 	at il.ac.technion.cs.softwaredesign.MyTest.initiateRemotePeer(MyTest.kt:294)
@@ -585,7 +585,7 @@ Caused by: java.lang.IllegalArgumentException
 	at java.base/java.lang.Thread.run(Thread.java:832)
 </failure>
   </testcase>
-  <testcase name="lame torrent is loaded, file data is loaded, and recheck returns true()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.016">
+  <testcase name="lame torrent is loaded, file data is loaded, and recheck returns true()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.285">
     <failure message="kotlin.NotImplementedError: An operation is not implemented: Implement me!" type="kotlin.NotImplementedError">kotlin.NotImplementedError: An operation is not implemented: Implement me!
 	at il.ac.technion.cs.softwaredesign.CourseTorrent.loadFiles(CourseTorrent.kt:573)
 	at il.ac.technion.cs.softwaredesign.MyTest.lame torrent is loaded, file data is loaded, and recheck returns true(MyTest.kt:176)
@@ -774,7 +774,7 @@ Caused by: java.lang.IllegalArgumentException
 	at java.base/java.lang.Thread.run(Thread.java:832)
 </failure>
   </testcase>
-  <testcase name="sends unchoke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.01">
+  <testcase name="sends unchoke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.043">
     <failure message="kotlin.NotImplementedError: An operation is not implemented: Implement me!" type="kotlin.NotImplementedError">kotlin.NotImplementedError: An operation is not implemented: Implement me!
 	at il.ac.technion.cs.softwaredesign.CourseTorrent.torrentStats(CourseTorrent.kt:347)
 	at il.ac.technion.cs.softwaredesign.MyTest.initiateRemotePeer(MyTest.kt:294)
@@ -869,11 +869,11 @@ Caused by: java.lang.IllegalArgumentException
 	at java.base/java.lang.Thread.run(Thread.java:832)
 </failure>
   </testcase>
-  <testcase name="after load, announce is correct()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.015"/>
-  <testcase name="after announce, client has up-to-date peer list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.04"/>
-  <testcase name="client recieve announce error()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.036"/>
+  <testcase name="after load, announce is correct()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.104"/>
+  <testcase name="after announce, client has up-to-date peer list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.035"/>
+  <testcase name="client recieve announce error()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.014"/>
   <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[Jun 06, 2020 8:03:11 PM io.mockk.impl.log.JULLogger warn
+  <system-err><![CDATA[Jun 07, 2020 4:49:02 PM io.mockk.impl.log.JULLogger warn
 WARNING: Failed to transform class java/lang/Object
 java.lang.IllegalArgumentException: Unsupported class file major version 58
 	at net.bytebuddy.jar.asm.ClassReader.<init>(ClassReader.java:184)
