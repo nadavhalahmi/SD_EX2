@@ -67,28 +67,28 @@ class MyTest {
         /* Assertion to verify that the tracker was actually called */
     }
 
-//    @Test
-//    fun `client scrapes tracker and updates statistics`() {
-//        val infohash = torrent.load(lame).get()
-//        //val infohash = torrent.load(debian)
-//
-//        var resp = "d5:flagsd20:min_request_intervali360ee5:filesd20:"
-//        resp += coder.binary_encode(infohash, simple = true)
-//        resp += "d8:completei0e10:incompletei0e10:downloadedi0eeee"
-//
-//        //not sure my ISO... and not UTF8 but it works
-//        every {torrentHTTPMock.get(any(), any())} returns resp.toByteArray(Charsets.ISO_8859_1)
-//
-//        /* Tracker has infohash, 0 complete, 0 downloaded, 0 incomplete, no name key */
-//        assertDoesNotThrow { torrent.scrape(infohash).join() }
-//
-//        assertThat(
-//                torrent.trackerStats(infohash).get(),
-//                //equalTo(mapOf(Pair("http://bttracker.debian.org:6969/announce", Scrape(783, 18230, 3, null) as il.ac.technion.cs.softwaredesign.ScrapeData)))
-//                equalTo(mapOf(Pair("https://127.0.0.1:8082/announce", Scrape(0, 0, 0, null) as ScrapeData)))
-//        )
-//        /* Assertion to verify that the tracker was actually called */
-//    }
+    @Test
+    fun `client scrapes tracker and updates statistics`() {
+        val infohash = torrent.load(lame).get()
+        //val infohash = torrent.load(debian)
+
+        var resp = "d5:flagsd20:min_request_intervali360ee5:filesd20:"
+        resp += coder.binary_encode(infohash, simple = true)
+        resp += "d8:completei0e10:incompletei0e10:downloadedi0eeee"
+
+        //not sure my ISO... and not UTF8 but it works
+        every {torrentHTTPMock.get(any(), any())} returns resp.toByteArray(Charsets.ISO_8859_1)
+
+        /* Tracker has infohash, 0 complete, 0 downloaded, 0 incomplete, no name key */
+        assertDoesNotThrow { torrent.scrape(infohash).join() }
+
+        assertThat(
+                torrent.trackerStats(infohash).get(),
+                //equalTo(mapOf(Pair("http://bttracker.debian.org:6969/announce", Scrape(783, 18230, 3, null) as il.ac.technion.cs.softwaredesign.ScrapeData)))
+                equalTo(mapOf(Pair("https://127.0.0.1:8082/announce", Scrape(0, 0, 0, null) as ScrapeData)))
+        )
+        /* Assertion to verify that the tracker was actually called */
+    }
 
     @Test
     fun `after announce, client has up-to-date peer list`() {
@@ -128,37 +128,37 @@ class MyTest {
         )
     }
 
-//    @Test
-//    fun `peers are invalidated correctly`() {
-//        val infohash = torrent.load(lame).get()
-//
-//        var resp = "d8:intervali360e5:peers"
-//        val peers1 = listOf(Pair("127.0.0.22", 6887))
-//        val peersString1 = "6:"+ testUtils.buildPeersValueAsBinaryString(peers1) + "e"
-//        val resp1 = resp + peersString1
-//        val peers2= listOf(Pair("127.0.0.22", 6887), Pair("127.0.0.21", 6889))
-//        val peersString2 = "12:"+ testUtils.buildPeersValueAsBinaryString(peers2) + "e"
-//        val resp2 = resp + peersString2
-//
-//        //not sure my ISO... and not UTF8 but it works
-//        every {torrentHTTPMock.get(any(), any())} returns resp1.toByteArray(Charsets.ISO_8859_1)
-//        /* Returned peer list is: [("127.0.0.22", 6887)] */
-//        torrent.announce(infohash, TorrentEvent.STARTED, 0, 0, 2703360).get()
-//
-//        //not sure my ISO... and not UTF8 but it works
-//        every {torrentHTTPMock.get(any(), any())} returns resp2.toByteArray(Charsets.ISO_8859_1)
-//        /* Returned peer list is: [("127.0.0.22", 6887), ("127.0.0.21", 6889)] */
-//        torrent.announce(infohash, TorrentEvent.REGULAR, 0, 81920, 2621440).get()
-//
-//        torrent.invalidatePeer(infohash, KnownPeer("127.0.0.22", 6887, null)).get()
-//
-//        val knownPeers = torrent.knownPeers(infohash).get()
-//
-//        assertThat(
-//                knownPeers,
-//                anyElement(has(KnownPeer::ip, equalTo("127.0.0.22")) and has(KnownPeer::port, equalTo(6887))).not()
-//        )
-//    }
+    @Test
+    fun `peers are invalidated correctly`() {
+        val infohash = torrent.load(lame).get()
+
+        var resp = "d8:intervali360e5:peers"
+        val peers1 = listOf(Pair("127.0.0.22", 6887))
+        val peersString1 = "6:"+ testUtils.buildPeersValueAsBinaryString(peers1) + "e"
+        val resp1 = resp + peersString1
+        val peers2= listOf(Pair("127.0.0.22", 6887), Pair("127.0.0.21", 6889))
+        val peersString2 = "12:"+ testUtils.buildPeersValueAsBinaryString(peers2) + "e"
+        val resp2 = resp + peersString2
+
+        //not sure my ISO... and not UTF8 but it works
+        every {torrentHTTPMock.get(any(), any())} returns resp1.toByteArray(Charsets.ISO_8859_1)
+        /* Returned peer list is: [("127.0.0.22", 6887)] */
+        torrent.announce(infohash, TorrentEvent.STARTED, 0, 0, 2703360).get()
+
+        //not sure my ISO... and not UTF8 but it works
+        every {torrentHTTPMock.get(any(), any())} returns resp2.toByteArray(Charsets.ISO_8859_1)
+        /* Returned peer list is: [("127.0.0.22", 6887), ("127.0.0.21", 6889)] */
+        torrent.announce(infohash, TorrentEvent.REGULAR, 0, 81920, 2621440).get()
+
+        torrent.invalidatePeer(infohash, KnownPeer("127.0.0.22", 6887, null)).get()
+
+        val knownPeers = torrent.knownPeers(infohash).get()
+
+        assertThat(
+                knownPeers,
+                anyElement(has(KnownPeer::ip, equalTo("127.0.0.22")) and has(KnownPeer::port, equalTo(6887))).not()
+        )
+    }
 
     @Test
     fun `exceptions are thrown inside the CompletableFuture`() {

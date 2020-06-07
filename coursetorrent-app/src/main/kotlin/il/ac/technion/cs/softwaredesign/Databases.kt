@@ -27,7 +27,7 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
      * saves torrent to database as mentioned above
      */
     fun addTorrent(hash: String, value: ByteArray, dict: TorrentDict): CompletableFuture<Unit>{
-        torrentsDB.thenCompose { db ->
+        return torrentsDB.thenApply { db ->
             storageManager.setExists(db, hash)
             for (key in dict.keys) {
                 if (key == "announce" || key == "announce-list") {
@@ -41,13 +41,13 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
                     db.write((hash + key).toByteArray(), value.copyOfRange(range.startIndex(), range.endIndex()))
                 }
             }
-            return@thenCompose
         }
-        return CompletableFuture<Unit>()
     }
 
-    fun torrentExists(hash: String): Boolean {
-        return storageManager.exists(torrentsDB.get(), hash)
+    fun torrentExists(hash: String): CompletableFuture<Boolean> {
+        return torrentsDB.thenApply { db ->
+            storageManager.exists(db, hash)
+        }
     }
 
     /**
