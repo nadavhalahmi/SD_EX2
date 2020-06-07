@@ -5,6 +5,7 @@ import TorrentDict
 import il.ac.technion.cs.softwaredesign.storage.SecureStorageFactory
 import java.nio.charset.Charset
 import com.google.inject.Inject
+import java.util.concurrent.CompletableFuture
 
 
 private val charset: Charset = Charsets.UTF_8
@@ -25,16 +26,24 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
     /**
      * saves torrent to database as mentioned above
      */
-    fun addTorrent(hash: String, value: ByteArray, dict: TorrentDict){
-        val db = torrentsDB.get()
-        storageManager.setExists(db, hash)
-        for(key in dict.keys) {
-            if(key == "announce" || key == "announce-list") {
-                val range = dict.getRange(key)
-                storageManager.setValue(db, hash, key, value.copyOfRange(dict[key]!!.startIndex(), dict[key]!!.endIndex()))
-                db.write((hash + key).toByteArray(), value.copyOfRange(range.startIndex(), range.endIndex()))
+    fun addTorrent(hash: String, value: ByteArray, dict: TorrentDict): CompletableFuture<Unit>{
+        torrentsDB.thenCompose { db ->
+            storageManager.setExists(db, hash)
+            for (key in dict.keys) {
+                if (key == "announce" || key == "announce-list") {
+                    val range = dict.getRange(key)
+                    storageManager.setValue(
+                        db,
+                        hash,
+                        key,
+                        value.copyOfRange(dict[key]!!.startIndex(), dict[key]!!.endIndex())
+                    )
+                    db.write((hash + key).toByteArray(), value.copyOfRange(range.startIndex(), range.endIndex()))
+                }
             }
+            return@thenCompose
         }
+        return CompletableFuture<Unit>()
     }
 
     fun torrentExists(hash: String): Boolean {
