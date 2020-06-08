@@ -1,9 +1,8 @@
-class TorrentList() {
-    var lst: ArrayList<TorrentElement> = ArrayList<TorrentElement>()
+class TorrentList() : ArrayList<TorrentElement>(){
 
     fun toList(): List<Any>{
         val res = ArrayList<Any>()
-        for(elem in lst){
+        for(elem in this){
             when(val currVal = elem.value()){
                 is TorrentDict -> res.add(currVal.toDict())
                 is TorrentList -> res.add(currVal.toList())
@@ -15,9 +14,9 @@ class TorrentList() {
         return res
     }
 
-    fun add(elem: TorrentElement) {
-        lst.add(elem)
-    }
+//    fun add(elem: TorrentElement) {
+//        plusElement(elem)
+//    }
 
 //    fun Equals(other: Any?): Boolean {
 //        if(other !is Map<*, *>)

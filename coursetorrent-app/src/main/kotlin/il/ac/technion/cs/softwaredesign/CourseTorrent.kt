@@ -202,7 +202,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                                 resp.copyOfRange(respDict["peers"]!!.startIndex(), respDict["peers"]!!.endIndex())
                             if (peersBytes[0].toChar() == 'l') {
                                 val peersList = respDict["peers"]?.value() as TorrentList
-                                for (p in peersList.lst) {
+                                for (p in peersList) {
                                     val currPeer = p.value() as TorrentDict
                                     val port = (currPeer["port"]?.value() as Long).toInt()
                                     val ip = currPeer["ip"]?.value() as String
@@ -309,7 +309,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                 if (peersBytes != null) {
                     if (peersBytes[0].toChar() == 'l') {
                         val peersList = parser.parseList(peersBytes).value() as TorrentList
-                        for (p in peersList.lst) {
+                        for (p in peersList) {
                             val currPeer = p.value() as TorrentDict
                             val port = (currPeer["port"]?.value() as Long).toInt()
                             val ip = currPeer["ip"]?.value() as String
@@ -387,7 +387,14 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @throws IllegalArgumentException if [infohash] is not loaded.
      * @return Torrent statistics.
      */
-    fun torrentStats(infohash: String): CompletableFuture<TorrentStats> = TODO("Implement me!")
+    fun torrentStats(infohash: String): CompletableFuture<TorrentStats> {
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+        }.thenCompose {
+            databases.getTorrentStats(infohash)
+        }
+    }
 
     /**
      * Start listening for peer connections on a chosen port.
@@ -602,7 +609,15 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @throws IllegalArgumentException if [infohash] is not loaded.
      * @return Mapping from file name to file contents.
      */
-    fun files(infohash: String): CompletableFuture<Map<String, ByteArray>> = TODO("Implement me!")
+    fun files(infohash: String): CompletableFuture<Map<String, ByteArray>>{
+        TODO("NOT IMPLEMENTED")
+//        return databases.torrentExists(infohash).thenApply { exists ->
+//            if (!exists)
+//                throw java.lang.IllegalArgumentException()
+//        }.thenCompose {
+//            databases.getFiles(infohash)
+//        }
+    }
 
     /**
      * Load files into the client.
@@ -613,7 +628,17 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @param files A mapping from filename to file contents.
      * @throws IllegalArgumentException if [infohash] is not loaded,
      */
-    fun loadFiles(infohash: String, files: Map<String, ByteArray>): CompletableFuture<Unit> = TODO("Implement me!")
+    fun loadFiles(infohash: String, files: Map<String, ByteArray>): CompletableFuture<Unit>{
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+        }.thenCompose {
+            for(file in files){
+                databases.addFile(infohash, file.key, file.value)
+            }
+            CompletableFuture.completedFuture(Unit)
+        }
+    }
 
     /**
      * Compare SHA-1 hash for the loaded pieces of torrent [infohash] against the meta-info file. If a piece fails hash
@@ -622,5 +647,12 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @throws IllegalArgumentException if [infohash] is not loaded.
      * @return True if all the pieces have been downloaded and passed hash checking, false otherwise.
      */
-    fun recheck(infohash: String): CompletableFuture<Boolean> = TODO("Implement me!")
+    fun recheck(infohash: String): CompletableFuture<Boolean>{
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+        }.thenCompose {
+            CompletableFuture.completedFuture(true) //TODO: FIX, implement
+        }
+    }
 }

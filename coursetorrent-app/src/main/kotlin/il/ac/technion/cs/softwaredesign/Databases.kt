@@ -5,6 +5,7 @@ import TorrentDict
 import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.storage.SecureStorageFactory
 import java.nio.charset.Charset
+import java.time.Duration
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
@@ -22,6 +23,8 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
     private val torrentsDB = db_factory.open("my_torrents".toByteArray(charset))
     private val peersDB = db_factory.open("peers".toByteArray(charset))
     private val trackersDB = db_factory.open("trackers".toByteArray(charset))
+    private val torrentsStatsDB = db_factory.open("torrents_statistics".toByteArray(charset))
+    private val filesDB = db_factory.open("files".toByteArray(charset))
     private val storageManager = StorageManager()
 
     /**
@@ -163,6 +166,7 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
 //                        .thenCompose { _ ->
 //                            Scrape(complete.get(), downloaded.get(), incomplete.get(), name.get())
 //                        })
+                //val futures = listOf<CompletableFuture<*>>(complete, downloaded, incomplete, name)
 
                 Scrape(complete.get(), downloaded.get(), incomplete.get(), name.get()) //TODO: FIX
             }
@@ -171,4 +175,46 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
             }
         }
     }
+
+    fun getTorrentStats(hash: String): CompletableFuture<TorrentStats>{
+        return torrentsStatsDB.thenCombine(torrentStatsExists(hash)) { db, exists ->
+            if (exists) {
+                val uploaded =
+                        storageManager.getValue(db, hash, "uploaded").thenApply{res -> res?.toString(charset)!!.toLong() }
+                val downloaded =
+                        storageManager.getValue(db, hash, "downloaded").thenApply{res -> res?.toString(charset)!!.toLong() }
+                val left =
+                        storageManager.getValue(db, hash, "left").thenApply{res -> res?.toString(charset)!!.toLong() }
+                val wasted = storageManager.getValue(db, hash, "wasted").thenApply{res -> res?.toString(charset)!!.toLong() }
+                val shareRatio = storageManager.getValue(db, hash, "shareRatio").thenApply{res -> res?.toString(charset)!!.toDouble() }
+                val pieces = storageManager.getValue(db, hash, "pieces").thenApply{res -> res?.toString(charset)!!.toLong() }
+                val havePieces = storageManager.getValue(db, hash, "wasted").thenApply{res -> res?.toString(charset)!!.toLong() }
+                val leechTime = storageManager.getValue(db, hash, "leechTime").thenApply{res -> res?.toString(charset)!!.toLong() }//TODO: FIX
+                val seedTime = storageManager.getValue(db, hash, "seedTime").thenApply{res -> res?.toString(charset)!!.toLong() }//TODO: FIX
+
+                TorrentStats(uploaded.get(), downloaded.get(), left.get(), wasted.get(), shareRatio.get(), pieces.get(), havePieces.get(), Duration.ZERO, Duration.ZERO) //TODO: FIX
+            }
+            else {
+                null //TODO: CHECK THIS null (return time is not nullable right now)
+            }
+        }
+    }
+
+    private fun torrentStatsExists(hash: String): CompletableFuture<Boolean> {
+        return torrentsStatsDB.thenCompose { db ->
+            storageManager.exists(db, hash)
+        }
+    }
+
+    fun addFile(hash: String, key: String, value: ByteArray): CompletableFuture<Unit> {
+        return filesDB.thenCompose { db ->
+            storageManager.setValue(db, hash, key, value)
+        }
+    }
+
+//    fun getFiles(infohash: String) : CompletableFuture<Map<String, ByteArray>>{
+//        return filesDB.thenCompose { db ->
+//            storageManager.getValue(db, infohash, key)
+//        }
+//    }
 }
