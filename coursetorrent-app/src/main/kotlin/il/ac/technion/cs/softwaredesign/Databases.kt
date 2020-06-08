@@ -2,9 +2,10 @@ package il.ac.technion.cs.softwaredesign
 
 import StorageManager
 import TorrentDict
+import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.storage.SecureStorageFactory
 import java.nio.charset.Charset
-import com.google.inject.Inject
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 
@@ -45,7 +46,7 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
     }
 
     fun torrentExists(hash: String): CompletableFuture<Boolean> {
-        return torrentsDB.thenApply { db ->
+        return torrentsDB.thenCompose { db ->
             storageManager.exists(db, hash)
         }
     }
@@ -53,82 +54,121 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
     /**
      * gets value from database
      */
-    fun getTorrentField(hash: String, key: String): ByteArray? {
-        if(!storageManager.exists(torrentsDB.get(), hash)) return null
-        return storageManager.getValue(torrentsDB.get(), hash, key)
+    fun getTorrentField(hash: String, key: String): CompletableFuture<ByteArray?> {
+        return torrentsDB.thenCompose { db ->
+            storageManager.exists(db, hash).thenCompose { exists ->
+                if (!exists) CompletableFuture.completedFuture(null)
+                storageManager.getValue(db, hash, key)
+            }
+        }
     }
 
     /**
      * delete value from databaase:
      * (writes empty ByteArray to that key)
      */
-    fun deleteTorrent(hash: String): Unit {
-        storageManager.removeNotExist(torrentsDB.get(), hash)
+    fun deleteTorrent(hash: String): CompletableFuture<Unit> {
+        return torrentsDB.thenCompose { db ->
+            storageManager.removeNotExist(db, hash)
+        }
     }
 
-    fun getPeers(hash: String): ByteArray? {
-        return storageManager.getValue(torrentsDB.get(), hash, "peers")
+    fun getPeers(hash: String): CompletableFuture<ByteArray?> {
+        return torrentsDB.thenCompose { db ->
+            storageManager.getValue(db, hash, "peers")
+        }
     }
 
-    fun updateAnnounce(hash: String, announceList: List<List<String>>) {
-        var newAnnounce = "l"
-        for(l in announceList){
-            newAnnounce += "l"
-            for(url in l){
-                newAnnounce += url.toByteArray(charset).size.toString() + ":" +url
+    fun updateAnnounce(hash: String, announceList: List<List<String>>) : CompletableFuture<Unit> {
+        return torrentsDB.thenCompose { db ->
+            var newAnnounce = "l"
+            for (l in announceList) {
+                newAnnounce += "l"
+                for (url in l) {
+                    newAnnounce += url.toByteArray(charset).size.toString() + ":" + url
+                }
+                newAnnounce += "e"
             }
             newAnnounce += "e"
-        }
-        newAnnounce += "e"
-        storageManager.setValue(torrentsDB.get(), hash, "announce", newAnnounce.toByteArray(charset))
-        storageManager.setValue(torrentsDB.get(), hash, "announce-list", newAnnounce.toByteArray(charset))
-    }
-
-    fun updatePeersList(hash: String, peersBytes: ByteArray, peers: HashSet<KnownPeer>) {
-        storageManager.setValue(torrentsDB.get(), hash, "peers", peersBytes)
-        for(peer in peers) {
-            storageManager.setValid(peersDB.get(), "$hash-${peer.ip}-${peer.port}")
+            storageManager.setValue(db, hash, "announce", newAnnounce.toByteArray(charset))
+            storageManager.setValue(db, hash, "announce-list", newAnnounce.toByteArray(charset))
         }
     }
 
-    fun updateTracker(hash: String,tracker: String, stats: TorrentDict?) {
-        if(stats != null){
-            if(!trackerExists(hash,tracker)){
-                storageManager.setExists(trackersDB.get(), "$hash-$tracker")
-                storageManager.setValue(trackersDB.get(), hash, "$tracker-complete", "0".toByteArray())
-                storageManager.setValue(trackersDB.get(), hash, "$tracker-downloaded", "0".toByteArray())
-                storageManager.setValue(trackersDB.get(), hash, "$tracker-incomplete", "0".toByteArray())
-                //name is null by default
-            }
-            for(key in stats.keys) {
-                storageManager.setValue(trackersDB.get(), hash, "$tracker-$key", (stats[key]?.value() as Long).toString().toByteArray())
+    fun updatePeersList(hash: String, peersBytes: ByteArray, peers: HashSet<KnownPeer>) : CompletableFuture<Unit>{
+        return torrentsDB.thenCombine(peersDB){ tdb, pdb ->
+            storageManager.setValue(tdb, hash, "peers", peersBytes)
+            for(peer in peers) {
+                storageManager.setValid(pdb, "$hash-${peer.ip}-${peer.port}")
             }
         }
     }
 
-    fun trackerExists(hash: String, tracker: String): Boolean {
-        return storageManager.exists(trackersDB.get(), "$hash-$tracker")
-    }
-
-    fun invalidatePeer(hash: String, peer: KnownPeer) {
-        if(peerIsValid(hash, peer)) {
-            storageManager.setInValid(peersDB.get(), "$hash-${peer.ip}-${peer.port}")
+    fun updateTracker(hash: String,tracker: String, stats: TorrentDict?) : CompletableFuture<Unit> {
+        return trackersDB.thenCombine(trackerExists(hash, tracker)) { db, exists ->
+            if (stats != null) {
+                if (!exists) {
+                    storageManager.setExists(db, "$hash-$tracker")
+                    storageManager.setValue(db, hash, "$tracker-complete", "0".toByteArray())
+                    storageManager.setValue(db, hash, "$tracker-downloaded", "0".toByteArray())
+                    storageManager.setValue(db, hash, "$tracker-incomplete", "0".toByteArray())
+                    //name is null by default
+                }
+                for (key in stats.keys) {
+                    storageManager.setValue(
+                        db,
+                        hash,
+                        "$tracker-$key",
+                        (stats[key]?.value() as Long).toString().toByteArray()
+                    )
+                }
+            }
         }
     }
 
-    fun peerIsValid(hash: String, peer: KnownPeer): Boolean {
-        return storageManager.isValid(peersDB.get(), "$hash-${peer.ip}-${peer.port}")
+    fun trackerExists(hash: String, tracker: String): CompletableFuture<Boolean> {
+        return trackersDB.thenCompose { db ->
+            storageManager.exists(db, "$hash-$tracker")
+        }
     }
 
-    fun getTrackerStats(hash: String, tracker: String): Scrape? {
+    fun invalidatePeer(hash: String, peer: KnownPeer) : CompletableFuture<Unit> {
+        return peersDB.thenCombine(peerIsValid(hash, peer)) { db, valid ->
+            if (valid) {
+                storageManager.setInValid(db, "$hash-${peer.ip}-${peer.port}")
+            }
+        }
+    }
+
+    fun peerIsValid(hash: String, peer: KnownPeer): CompletableFuture<Boolean> {
+        return peersDB.thenCompose { db ->
+            storageManager.isValid(db, "$hash-${peer.ip}-${peer.port}")
+        }
+    }
+
+    fun getTrackerStats(hash: String, tracker: String): CompletableFuture<Scrape?> {
         //TODO: deal with tacker failed
-        if(trackerExists(hash, tracker)) {
-            val complete = storageManager.getValue(trackersDB.get(), "$hash-$tracker", "complete")?.toString(charset)!!.toInt()
-            val downloaded = storageManager.getValue(trackersDB.get(), "$hash-$tracker", "downloaded")?.toString(charset)!!.toInt()
-            val incomplete = storageManager.getValue(trackersDB.get(), "$hash-$tracker", "incomplete")?.toString(charset)!!.toInt()
-            val name = storageManager.getValue(trackersDB.get(), "$hash-$tracker", "name")?.toString(charset)
-            return Scrape(complete, downloaded, incomplete, name)
+        return trackersDB.thenCombine(trackerExists(hash, tracker)) { db, exists ->
+            if (exists) {
+                val complete =
+                    storageManager.getValue(db, "$hash-$tracker", "complete").thenApply{res -> res?.toString(charset)!!.toInt() }
+                val downloaded =
+                    storageManager.getValue(db, "$hash-$tracker", "downloaded").thenApply{res -> res?.toString(charset)!!.toInt() }
+                val incomplete =
+                    storageManager.getValue(db, "$hash-$tracker", "incomplete").thenApply{res -> res?.toString(charset)!!.toInt() }
+                val name = storageManager.getValue(db, "$hash-$tracker", "name").thenApply{res -> res?.toString(charset)}
+
+//                CompletableFuture.completedFuture(CompletableFuture.allOf(
+//                        complete, downloaded, incomplete, name)
+//                        .thenCompose { _ ->
+//                            Scrape(complete.get(), downloaded.get(), incomplete.get(), name.get())
+//                        })
+
+                Scrape(complete.get(), downloaded.get(), incomplete.get(), name.get()) //TODO: FIX
+            }
+            else {
+                null
+            }
         }
-        return null
     }
 }

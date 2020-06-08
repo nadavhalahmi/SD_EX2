@@ -69,6 +69,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
         return databases.torrentExists(infohash).thenApply { exists ->
             if (!exists)
                 throw IllegalArgumentException()
+        }.thenCompose {
             databases.deleteTorrent(infohash)
         }
     }
@@ -87,18 +88,41 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @return Tier lists of announce URLs.
      */
     fun announces(infohash: String): CompletableFuture<List<List<String>>> {
-        var lst: ByteArray? = databases.getTorrentField(infohash, "announce-list")
-        if(lst === null) {
-            lst = databases.getTorrentField(infohash, "announce")
-            if (lst === null)
-                throw IllegalArgumentException()
+        val announceList = databases.getTorrentField(infohash, "announce-list").thenApply { lst ->
+            if (lst !== null) {
+                ((parser.parseList(lst).value() as TorrentList).toList() as List<List<String>>)
+            }
             else
-                lst = "ll".toByteArray(Charsets.UTF_8) + lst + "ee".toByteArray(Charsets.UTF_8)
+                null
         }
-        val resLst = ((parser.parseList(lst).value() as TorrentList).toList() as List<List<String>>)
-        val res = CompletableFuture<List<List<String>>>()
-        res.complete(resLst)
-        return res
+        val announce = databases.getTorrentField(infohash, "announce").thenApply { lst ->
+            if (lst !== null) {
+                val newLst = "ll".toByteArray(Charsets.UTF_8) + lst + "ee".toByteArray(Charsets.UTF_8)
+                ((parser.parseList(newLst).value() as TorrentList).toList() as List<List<String>>)
+            }
+            else
+                null
+        }
+        return announceList.thenCombine(announce) { announceListRes, announceRes ->
+            when {
+                announceListRes !== null -> announceListRes
+                announceRes !== null -> announceRes
+                else -> throw IllegalArgumentException()
+            }
+        }
+//        return databases.getTorrentField(infohash, "announce-list").thenApply { announceList: ByteArray? ->
+//            if (announceList !== null) {
+//                announceList
+//            }
+//        }.thenCompose {
+//            databases.getTorrentField(infohash, "announce").thenApply { announce ->
+//                if (announce === null)
+//                    throw IllegalArgumentException()
+//                "ll".toByteArray(Charsets.UTF_8) + announce + "ee".toByteArray(Charsets.UTF_8)
+//            }
+//        }.thenApply{ lst ->
+//            ((parser.parseList(lst!!).value() as TorrentList).toList() as List<List<String>>)
+//        }
     }
 
     /**
@@ -141,68 +165,71 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
         return databases.torrentExists(infohash).thenApply { exists ->
             if (!exists)
                 throw java.lang.IllegalArgumentException()
+        }.thenCompose {
             val randLen = 6
             val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
-            var announceList = announces(infohash = infohash).get()
-            var respDict: TorrentDict? = null
-            var newList = announceList.toMutableList()
-            if (event == TorrentEvent.STARTED) {
-                var k = 0
-                for (i in (announceList.indices).shuffled()) {
-                    newList[k] = announceList[i].shuffled()
-                    k++
+            announces(infohash = infohash).thenApply { announceList ->
+                var respDict: TorrentDict? = null
+                var newList = announceList.toMutableList()
+                if (event == TorrentEvent.STARTED) {
+                    var k = 0
+                    for (i in (announceList.indices).shuffled()) {
+                        newList[k] = announceList[i].shuffled()
+                        k++
+                    }
+                    databases.updateAnnounce(infohash, newList)
                 }
-                databases.updateAnnounce(infohash, newList)
-            }
-            for (l in newList) {
-                for (tracker in l) {
-                    try {
-                        val params = HashMap<String, String>()
-                        params["info_hash"] = coder.binary_encode(infohash)
-                        params["event"] = event.toString().toLowerCase()
-                        params["uploaded"] = uploaded.toString()
-                        params["downloaded"] = downloaded.toString()
-                        params["left"] = left.toString()
-                        params["compact"] = "1"
-                        val randomString = (1..randLen)
-                            .map { kotlin.random.Random.nextInt(0, charPool.size) }
-                            .map(charPool::get)
-                            .joinToString("")
-                        val ids = coder.SHAsum(("206784258" + "314628090").toByteArray()).slice(0 until 6)
-                        params["peer_id"] = "-CS1000-$ids$randomString"
-                        var resp = torrentHTTP.get(tracker, params)
-                        respDict = parser.parse(resp)
-                        val peers = HashSet<KnownPeer>()
-                        val peersBytes =
-                            resp.copyOfRange(respDict["peers"]!!.startIndex(), respDict["peers"]!!.endIndex())
-                        if (peersBytes[0].toChar() == 'l') {
-                            val peersList = respDict["peers"]?.value() as TorrentList
-                            for (p in peersList.lst) {
-                                val currPeer = p.value() as TorrentDict
-                                val port = (currPeer["port"]?.value() as Long).toInt()
-                                val ip = currPeer["ip"]?.value() as String
-                                peers.add(KnownPeer(ip = ip, port = port, peerId = null))
+                for (l in newList) {
+                    for (tracker in l) {
+                        try {
+                            val params = HashMap<String, String>()
+                            params["info_hash"] = coder.binary_encode(infohash)
+                            params["event"] = event.toString().toLowerCase()
+                            params["uploaded"] = uploaded.toString()
+                            params["downloaded"] = downloaded.toString()
+                            params["left"] = left.toString()
+                            params["compact"] = "1"
+                            val randomString = (1..randLen)
+                                .map { kotlin.random.Random.nextInt(0, charPool.size) }
+                                .map(charPool::get)
+                                .joinToString("")
+                            val ids = coder.SHAsum(("206784258" + "314628090").toByteArray()).slice(0 until 6)
+                            params["peer_id"] = "-CS1000-$ids$randomString"
+                            var resp = torrentHTTP.get(tracker, params)
+                            respDict = parser.parse(resp)
+                            val peers = HashSet<KnownPeer>()
+                            val peersBytes =
+                                resp.copyOfRange(respDict["peers"]!!.startIndex(), respDict["peers"]!!.endIndex())
+                            if (peersBytes[0].toChar() == 'l') {
+                                val peersList = respDict["peers"]?.value() as TorrentList
+                                for (p in peersList.lst) {
+                                    val currPeer = p.value() as TorrentDict
+                                    val port = (currPeer["port"]?.value() as Long).toInt()
+                                    val ip = currPeer["ip"]?.value() as String
+                                    peers.add(KnownPeer(ip = ip, port = port, peerId = null))
+                                }
+                            } else {
+                                val start =
+                                    (parser.parseBytes(peersBytes) { peersBytes[it].toChar() == ':' }).length + 1
+                                val end = peersBytes.size
+                                for (i in start until end step 6) {
+                                    val (ip, port) = coder.get_ip_port(peersBytes.copyOfRange(i, i + 6))
+                                    peers.add(KnownPeer(ip = ip, port = port, peerId = null))
+                                }
                             }
-                        } else {
-                            val start = (parser.parseBytes(peersBytes) { peersBytes[it].toChar() == ':' }).length + 1
-                            val end = peersBytes.size
-                            for (i in start until end step 6) {
-                                val (ip, port) = coder.get_ip_port(peersBytes.copyOfRange(i, i + 6))
-                                peers.add(KnownPeer(ip = ip, port = port, peerId = null))
-                            }
+                            databases.updatePeersList(infohash, peersBytes, peers)
+                            if (respDict["interval"] != null)
+                                return@thenApply (respDict["interval"]?.value() as Long).toInt()
+                        } catch (e: Throwable) {
+                            continue
                         }
-                        databases.updatePeersList(infohash, peersBytes, peers)
-                        if (respDict["interval"] != null)
-                            return@thenApply (respDict["interval"]?.value() as Long).toInt()
-                    } catch (e: Throwable) {
-                        continue
                     }
                 }
+                if (respDict != null)
+                    throw TrackerException(respDict["failure reason"]?.value().toString())
+                else
+                    throw TrackerException("generic announce exception") //TODO: check this works
             }
-            if (respDict != null)
-                throw TrackerException(respDict["failure reason"]?.value().toString())
-            else
-                throw TrackerException("generic announce exception") //TODO: check this works
         }
     }
 
@@ -221,20 +248,21 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
         return databases.torrentExists(infohash).thenApply { exists ->
             if (!exists)
                 throw java.lang.IllegalArgumentException()
-            val announceList: List<List<String>> = announces(infohash = infohash).get()
-            for (l in announceList) {
-                for (tracker in l) {
-                    if (tracker.split('/').last().startsWith("announce")) {
-                        val lastIndex = tracker.lastIndexOf(char = '/')
-                        val scrape =
-                            tracker.slice(0..lastIndex) + "scrape" + tracker.slice((lastIndex + "/announce".length) until tracker.length)
-                        val params = HashMap<String, String>()
-                        params["info_hash"] = coder.binary_encode(infohash)
-                        var resp = torrentHTTP.get(scrape, params)
-                        val respDict = parser.parse(resp)
-                        val files = respDict["files"]?.value() as TorrentDict
-                        val stats = files[coder.string_to_hex(infohash)]?.value() as TorrentDict?
-                        databases.updateTracker(infohash, tracker, stats)
+        }.thenCompose {announces(infohash = infohash).thenApply { announceList ->
+                for (l in announceList) {
+                    for (tracker in l) {
+                        if (tracker.split('/').last().startsWith("announce")) {
+                            val lastIndex = tracker.lastIndexOf(char = '/')
+                            val scrape =
+                                tracker.slice(0..lastIndex) + "scrape" + tracker.slice((lastIndex + "/announce".length) until tracker.length)
+                            val params = HashMap<String, String>()
+                            params["info_hash"] = coder.binary_encode(infohash)
+                            var resp = torrentHTTP.get(scrape, params)
+                            val respDict = parser.parse(resp)
+                            val files = respDict["files"]?.value() as TorrentDict
+                            val stats = files[coder.string_to_hex(infohash)]?.value() as TorrentDict?
+                            databases.updateTracker(infohash, tracker, stats)
+                        }
                     }
                 }
             }
@@ -254,6 +282,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
         return databases.torrentExists(infohash).thenApply { exists ->
             if (!exists)
                 throw java.lang.IllegalArgumentException()
+        }.thenCompose {
             databases.invalidatePeer(infohash, peer)
         }
     }
@@ -276,26 +305,31 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
             val res = HashSet<KnownPeer>()
-            val peersBytes = databases.getPeers(infohash)
-            if (peersBytes != null) {
-                if (peersBytes[0].toChar() == 'l') {
-                    val peersList = parser.parseList(peersBytes).value() as TorrentList
-                    for (p in peersList.lst) {
-                        val currPeer = p.value() as TorrentDict
-                        val port = (currPeer["port"]?.value() as Long).toInt()
-                        val ip = currPeer["ip"]?.value() as String
-                        val peer = KnownPeer(ip, port, null)
-                        if (databases.peerIsValid(infohash, peer))
-                            res.add(peer)
-                    }
-                } else {
-                    val start = (parser.parseBytes(peersBytes) { peersBytes[it].toChar() == ':' }).length + 1
-                    val end = peersBytes.size
-                    for (i in start until end step 6) {
-                        val (ip, port) = coder.get_ip_port(peersBytes.copyOfRange(i, i + 6))
-                        val peer = KnownPeer(ip, port, null)
-                        if (databases.peerIsValid(infohash, peer))
-                            res.add(peer)
+            databases.getPeers(infohash).thenApply { peersBytes ->
+                if (peersBytes != null) {
+                    if (peersBytes[0].toChar() == 'l') {
+                        val peersList = parser.parseList(peersBytes).value() as TorrentList
+                        for (p in peersList.lst) {
+                            val currPeer = p.value() as TorrentDict
+                            val port = (currPeer["port"]?.value() as Long).toInt()
+                            val ip = currPeer["ip"]?.value() as String
+                            val peer = KnownPeer(ip, port, null)
+                            databases.peerIsValid(infohash, peer).thenApply { valid ->
+                                if (valid)
+                                    res.add(peer)
+                            }
+                        }
+                    } else {
+                        val start = (parser.parseBytes(peersBytes) { peersBytes[it].toChar() == ':' }).length + 1
+                        val end = peersBytes.size
+                        for (i in start until end step 6) {
+                            val (ip, port) = coder.get_ip_port(peersBytes.copyOfRange(i, i + 6))
+                            val peer = KnownPeer(ip, port, null)
+                            databases.peerIsValid(infohash, peer).thenApply { valid ->
+                                if (valid)
+                                    res.add(peer)
+                            }
+                        }
                     }
                 }
             }
@@ -325,17 +359,20 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
         return databases.torrentExists(infohash).thenApply { exists ->
             if (!exists)
                 throw java.lang.IllegalArgumentException()
+        }.thenCompose {
             val res = HashMap<String, ScrapeData>()
-            val announceList = announces(infohash).get()
-            for (l in announceList) {
-                for (tracker in l) {
-                    val stats = databases.getTrackerStats(infohash, tracker)
-                    if (stats != null) {
-                        res[tracker] = stats
+            announces(infohash).thenApply {announceList ->
+                for (l in announceList) {
+                    for (tracker in l) {
+                        databases.getTrackerStats(infohash, tracker).thenAccept { stats ->
+                            if (stats != null) {
+                                res[tracker] = stats
+                            }
+                        }
                     }
                 }
+                res as Map<String, ScrapeData>
             }
-            res
         }
     }
 
