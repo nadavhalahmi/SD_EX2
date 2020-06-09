@@ -633,9 +633,12 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
         }.thenCompose {
-            for(file in files){
+            var allFiles = ByteArray(0)
+            for (file in files) {
                 databases.addFile(infohash, file.key, file.value)
+                allFiles += file.value
             }
+            databases.addAllFiles(infohash, allFiles)
             CompletableFuture.completedFuture(Unit)
         }
     }
@@ -652,7 +655,34 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
         }.thenCompose {
-            CompletableFuture.completedFuture(true) //TODO: FIX, implement
+            databases.getTorrentField(infohash, "info").thenCompose {info ->
+                val infoDict = parser.parse(info!!)
+                var pieces = info.copyOfRange(infoDict["pieces"]!!.startIndex(), infoDict["pieces"]!!.endIndex())
+                val start =
+                        (parser.parseBytes(pieces) { pieces[it].toChar() == ':' }).length + 1
+                val end = pieces.size
+                pieces = pieces.copyOfRange(start, end)
+                val pieceLength = (infoDict["piece length"]!!.value() as Long).toInt()
+                val files = infoDict["files"]!!.value() as TorrentList
+                //val filePaths = files.map { elem ->  elem["path"]!![0].value() as String}
+
+                var res = true
+                var pi = 0
+                //TODO: CHECK if allfiles is too short or pieces is too short
+                databases.getAllFiles(infohash).thenApply { allfiles ->
+                    for ( fpi in allfiles!!.indices step pieceLength) {
+                        val filePiece = allfiles.copyOfRange(fpi, minOf(fpi+pieceLength, allfiles.lastIndex+1))
+                        val filePieceHash = coder.SHAsum(filePiece)
+                        val pieceFromPieces = pieces.copyOfRange(pi * 20, (pi + 1) * 20)
+                        val firstFilePieceHashBytes = coder.binary_encode(filePieceHash, simple = true).toByteArray(Charsets.ISO_8859_1)
+                        res = pieceFromPieces contentEquals firstFilePieceHashBytes
+                        pi++
+                        if (!res)
+                            break
+                    }
+                    res
+                }
+            }
         }
     }
 }

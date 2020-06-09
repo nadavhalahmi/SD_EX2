@@ -183,6 +183,32 @@ class MyTest {
     }
 
     @Test
+    fun `first file is good, second bad`() {
+        val infohash = torrent.load(lame).get()
+
+        val done = torrent.loadFiles(
+                infohash,
+                mapOf("lame.exe" to lameExe.readBytes(), "lame_enc.dll" to "wrond data".toByteArray())
+        )
+                .thenCompose { torrent.recheck(infohash) }.get()
+
+        Assertions.assertFalse(done)
+    }
+
+    @Test
+    fun `first file is bad, second good`() {
+        val infohash = torrent.load(lame).get()
+
+        val done = torrent.loadFiles(
+                infohash,
+                mapOf("lame.exe" to "wrong data".toByteArray(), "lame_enc.dll" to lameEnc.readBytes())
+        )
+                .thenCompose { torrent.recheck(infohash) }.get()
+
+        Assertions.assertFalse(done)
+    }
+
+    @Test
     fun `lame torrent is loaded, wrong file data is loaded, and recheck returns false`() {
         val infohash = torrent.load(lame).get()
 

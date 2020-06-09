@@ -34,7 +34,8 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
         return torrentsDB.thenApply { db ->
             storageManager.setExists(db, hash)
             for (key in dict.keys) {
-                if (key == "announce" || key == "announce-list") {
+                //TODO: CHECK if whole info can be saved
+                if (key == "announce" || key == "announce-list" || key == "info") {
                     val range = dict.getRange(key)
                     storageManager.setValue(
                         db,
@@ -212,9 +213,21 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
         }
     }
 
-//    fun getFiles(infohash: String) : CompletableFuture<Map<String, ByteArray>>{
-//        return filesDB.thenCompose { db ->
-//            storageManager.getValue(db, infohash, key)
-//        }
-//    }
+    fun getFile(hash: String, key: String): CompletableFuture<ByteArray?> {
+        return filesDB.thenCompose { db ->
+            storageManager.getValue(db, hash, key)
+        }
+    }
+
+    fun addAllFiles(infohash: String, allFiles: ByteArray): CompletableFuture<Unit> {
+        return filesDB.thenCompose { db ->
+            storageManager.setValue(db, infohash, "", allFiles)
+        }
+    }
+
+    fun getAllFiles(infohash: String) : CompletableFuture<ByteArray?>{
+        return filesDB.thenCompose { db ->
+            storageManager.getValue(db, infohash, "")
+        }
+    }
 }

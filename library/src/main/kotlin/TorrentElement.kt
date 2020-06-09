@@ -31,4 +31,12 @@ open class TorrentElement(protected val value: Any, startIndex: Int, endIndex: I
     fun endIndex(): Int{
         return range.endIndex()
     }
+
+    operator fun get(index: Int): TorrentElement{
+        return (value as TorrentList)[index]
+    }
+
+    operator fun get(key: String): TorrentElement?{
+        return (value as TorrentDict)[key]
+    }
 }
