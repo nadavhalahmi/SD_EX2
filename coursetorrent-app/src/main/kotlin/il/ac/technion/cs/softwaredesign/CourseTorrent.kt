@@ -12,7 +12,12 @@ import il.ac.technion.cs.softwaredesign.exceptions.PeerChokedException
 import il.ac.technion.cs.softwaredesign.exceptions.PeerConnectException
 import il.ac.technion.cs.softwaredesign.exceptions.PieceHashException
 import il.ac.technion.cs.softwaredesign.exceptions.TrackerException
+import java.net.ServerSocket
+import java.util.*
 import java.util.concurrent.CompletableFuture
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
+import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
 /**
@@ -26,6 +31,8 @@ import kotlin.system.exitProcess
 class CourseTorrent @Inject constructor(private val databases: Databases, private val torrentHTTP: ITorrentHTTP) {
     private val parser = TorrentParser()
     private val coder = Coder()
+    private lateinit var server : ServerSocket
+
     /**
      * Load in the torrent metainfo file from [torrent]. The specification for these files can be found here:
      * [Metainfo File Structure](https://wiki.theory.org/index.php/BitTorrentSpecification#Metainfo_File_Structure).
@@ -225,7 +232,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                         }
                     }
                 }
-                if (respDict != null)
+                if (respDict !== null)
                     throw TrackerException(respDict["failure reason"]?.value().toString())
                 else
                     throw TrackerException("generic announce exception") //TODO: check this works
@@ -408,7 +415,12 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      *
      * @throws IllegalStateException If already listening.
      */
-    fun start(): CompletableFuture<Unit> = TODO("Implement me!")
+    fun start(): CompletableFuture<Unit>{
+        if(!this::server.isInitialized)
+            server = ServerSocket(6887)
+        println("Server is running on port ${server.localPort}")
+        return CompletableFuture.completedFuture(Unit)
+    }
 
     /**
      * Disconnect from all connected peers, and stop listening for new peer connections
@@ -419,7 +431,10 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      *
      * @throws IllegalStateException If not listening.
      */
-    fun stop(): CompletableFuture<Unit> = TODO("Implement me!")
+    fun stop(): CompletableFuture<Unit>{
+        server.close()
+        return CompletableFuture.completedFuture(Unit)
+    }
 
     /**
      * Connect to [peer] using the peer protocol described in [BEP 003](http://bittorrent.org/beps/bep_0003.html).
@@ -519,7 +534,12 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      *
      * This is an *update* command. (maybe)
      */
-    fun handleSmallMessages(): CompletableFuture<Unit> = TODO("Implement me!")
+    fun handleSmallMessages(): CompletableFuture<Unit>{
+        val s = server.accept()
+        val output = s.inputStream.readNBytes(68)
+        s.outputStream.write(output)
+        return CompletableFuture.completedFuture(Unit)
+    }
 
     /**
      * Download piece number [pieceIndex] of the torrent identified by [infohash].

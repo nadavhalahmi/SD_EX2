@@ -196,7 +196,8 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
                 TorrentStats(uploaded.get(), downloaded.get(), left.get(), wasted.get(), shareRatio.get(), pieces.get(), havePieces.get(), Duration.ZERO, Duration.ZERO) //TODO: FIX
             }
             else {
-                null //TODO: CHECK THIS null (return time is not nullable right now)
+                storageManager.setExists(db, hash)
+                TorrentStats(0, 0, 0, 0, 0.0, 0, 0, Duration.ZERO, Duration.ZERO)
             }
         }
     }

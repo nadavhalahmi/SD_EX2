@@ -1,3 +1,6 @@
 /build/
 /.idea/
 /.gradle/
+/coursetorrent-app/build/
+/coursetorrent-test/build/
+/library/build/
