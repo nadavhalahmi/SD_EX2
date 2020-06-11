@@ -1,10 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2020-06-06T16:30:41" hostname="NADAV-OLD-LAPTO" time="1.366">
+<testsuite name="il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2020-06-11T11:12:47" hostname="NADAV-LAPTOP" time="1.521">
   <properties/>
-  <testcase name="client announces to tracker()" classname="il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest" time="1.366">
-    <failure message="il.ac.technion.cs.softwaredesign.exceptions.TrackerException: generic announce exception" type="il.ac.technion.cs.softwaredesign.exceptions.TrackerException">il.ac.technion.cs.softwaredesign.exceptions.TrackerException: generic announce exception
-	at il.ac.technion.cs.softwaredesign.CourseTorrent.announce(CourseTorrent.kt:203)
-	at il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest.client announces to tracker(CourseTorrentStaffTest.kt:45)
+  <testcase name="starts listening and responds to connection and handshake()" classname="il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest" time="1.521">
+    <failure message="java.util.concurrent.CompletionException: il.ac.technion.cs.softwaredesign.exceptions.TrackerException: generic announce exception" type="java.util.concurrent.CompletionException">java.util.concurrent.CompletionException: il.ac.technion.cs.softwaredesign.exceptions.TrackerException: generic announce exception
+	at java.base/java.util.concurrent.CompletableFuture.encodeThrowable(CompletableFuture.java:314)
+	at java.base/java.util.concurrent.CompletableFuture.uniApplyNow(CompletableFuture.java:683)
+	at java.base/java.util.concurrent.CompletableFuture.uniApplyStage(CompletableFuture.java:658)
+	at java.base/java.util.concurrent.CompletableFuture.thenApply(CompletableFuture.java:2158)
+	at il.ac.technion.cs.softwaredesign.CourseTorrent$announce$2.apply(CourseTorrent.kt:181)
+	at il.ac.technion.cs.softwaredesign.CourseTorrent$announce$2.apply(CourseTorrent.kt:33)
+	at java.base/java.util.concurrent.CompletableFuture.uniComposeStage(CompletableFuture.java:1183)
+	at java.base/java.util.concurrent.CompletableFuture.thenCompose(CompletableFuture.java:2299)
+	at il.ac.technion.cs.softwaredesign.CourseTorrent.announce(CourseTorrent.kt:178)
+	at il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest$initiateRemotePeer$1.apply(CourseTorrentStaffTest.kt:237)
+	at il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest$initiateRemotePeer$1.apply(CourseTorrentStaffTest.kt:14)
+	at java.base/java.util.concurrent.CompletableFuture.uniComposeStage(CompletableFuture.java:1183)
+	at java.base/java.util.concurrent.CompletableFuture.thenCompose(CompletableFuture.java:2299)
+	at il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest.initiateRemotePeer(CourseTorrentStaffTest.kt:236)
+	at il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest.starts listening and responds to connection and handshake(CourseTorrentStaffTest.kt:144)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -93,10 +106,15 @@
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:630)
 	at org.gradle.internal.concurrent.ThreadFactoryImpl$ManagedThreadRunnable.run(ThreadFactoryImpl.java:56)
 	at java.base/java.lang.Thread.run(Thread.java:832)
+Caused by: il.ac.technion.cs.softwaredesign.exceptions.TrackerException: generic announce exception
+	at il.ac.technion.cs.softwaredesign.CourseTorrent$announce$2$1.apply(CourseTorrent.kt:241)
+	at il.ac.technion.cs.softwaredesign.CourseTorrent$announce$2$1.apply(CourseTorrent.kt:33)
+	at java.base/java.util.concurrent.CompletableFuture.uniApplyNow(CompletableFuture.java:680)
+	... 101 more
 </failure>
   </testcase>
   <system-out><![CDATA[]]></system-out>
-  <system-err><![CDATA[Jun 06, 2020 7:30:40 PM io.mockk.impl.log.JULLogger warn
+  <system-err><![CDATA[Jun 11, 2020 2:12:46 PM io.mockk.impl.log.JULLogger warn
 WARNING: Failed to transform class java/lang/Object
 java.lang.IllegalArgumentException: Unsupported class file major version 58
 	at net.bytebuddy.jar.asm.ClassReader.<init>(ClassReader.java:184)
