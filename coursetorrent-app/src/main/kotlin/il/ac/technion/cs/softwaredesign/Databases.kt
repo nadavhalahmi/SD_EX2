@@ -211,15 +211,15 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
         }
     }
 
-    fun addPiece(hash: String, key: String, value: ByteArray): CompletableFuture<Unit> {
+    fun addPiece(hash: String, peer: KnownPeer, index: Long, value: ByteArray): CompletableFuture<Unit> {
         return piecesDB.thenCompose { db ->
-            storageManager.setValue(db, hash, key, value)
+            storageManager.setValue(db, hash, "$peer.ip-${peer.port}-${index}", value)
         }
     }
 
-    fun getPiece(hash: String, key: String): CompletableFuture<ByteArray?> {
+    fun getPiece(hash: String, peer: KnownPeer, index: Long): CompletableFuture<ByteArray?> {
         return piecesDB.thenCompose { db ->
-            storageManager.getValue(db, hash, key)
+            storageManager.getValue(db, hash, "$peer.ip-${peer.port}-${index}")
         }
     }
 

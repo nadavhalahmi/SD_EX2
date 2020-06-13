@@ -347,6 +347,56 @@ class MyTest {
 //        return false
 //    }
 
+//    @Test
+//    fun `check bitfield`(){
+//        val infohash = torrent.load(lame).get()
+//        // Create bitfieldByteArray which should be the content of the bitfield message
+//        // Content: 4 bytes length prefix (1 + n/8) + 1 byte of 5 + n/8 bytes of payload
+//        val pieces = getExistedPieces(infohash)
+//        val n = pieces.size
+//        val lengthPrefix = (1 + n / 8).toLong()
+//        val bitfieldByteArray = ByteArray(n / 8)
+//        // TODO: implemeny: bitfieldByteArray[0..3] = lengthPrefix
+//        var j = 0
+//        var byte = 0
+//        var v = 128
+//        for (i in 0..n) {
+//            if (pieces.contains(i.toLong())) {
+//                byte += v
+//            }
+//            if (v == 1) {
+//                bitfieldByteArray[j++] = byte.toByte()
+//                v = 256
+//            }
+//            v /= 2
+//        }
+//        var equals = true
+//        val x = getBitfieldMessage()
+//        if (x.size != bitfieldByteArray.size) {
+//            equals = false
+//        } else {
+//            for (i in 0..x.size) {
+//                if (x[i] != bitfieldByteArray[i]) {
+//                    equals = false
+//                    break
+//                }
+//            }
+//        }
+//        assert(equals)
+//    }
+
+
+    private fun getExistedPieces(infohash: String): List<Long> {
+        val pieces = torrent.availablePieces(infohash, 1, 0)
+        val x = listOf(0L, 3L, 5L) // TODO: return a list of pieces downloaded and verified
+        return x
+    }
+
+    private fun getBitfieldMessage(): ByteArray {
+        val x = byteArrayOf(1, 5, 17) // TODO: return the bitfield message transmitted
+        return x
+    }
+
     @Test
     fun `connects to remote peer`() {
         val infohash = torrent.load(lame).get()

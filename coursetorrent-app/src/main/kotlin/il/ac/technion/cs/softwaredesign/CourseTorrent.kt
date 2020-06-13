@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
+import kotlin.math.pow
 
 /**
  * This is the class implementing CourseTorrent, a BitTorrent client.
@@ -449,6 +450,8 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @throws IllegalStateException If not listening.
      */
     fun stop(): CompletableFuture<Unit>{
+        if(server.isClosed)
+            throw IllegalStateException()
         peersConnectedToMe.map { it -> it.value.second.close() }
         server.close()
         return CompletableFuture.completedFuture(Unit)
@@ -540,12 +543,12 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @throws IllegalArgumentException if [infohash] is not loaded.
      */
     fun connectedPeers(infohash: String): CompletableFuture<List<ConnectedPeer>>{
-        val lst = peersConnectedToMe.map { it ->
-            ConnectedPeer(KnownPeer(it.value.second.inetAddress.toString(), it.value.second.port, null), amChoking = true,
-                    amInterested = true, averageSpeed = 0.0, completedPercentage = 0.0, peerChoking = true,
-                    peerInterested = true)
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+            val lst = peersConnectedToMe.map { it -> it.value.first }
+            lst
         }
-        return CompletableFuture.completedFuture(lst)
     }
 
     /**
@@ -697,7 +700,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
         }.thenCompose { //TODO: handle execptions
-            databases.getPiece(infohash, pieceIndex.toString()).thenApply { piece ->
+            databases.getPiece(infohash, peer, pieceIndex).thenApply { piece ->
                 val s = peersConnectedToMe[peer] ?: throw java.lang.IllegalArgumentException()
                 s.second.outputStream.write(WireProtocolEncoder.encode(7, ints= *intArrayOf(13, pieceIndex.toInt())))
 
@@ -737,6 +740,15 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                 throw java.lang.IllegalArgumentException()
         }.thenApply {
             for(s in peersConnectedToMe) {
+//                val totalfound = 0L
+//                for(index in 0L..(2.0.pow(14).toInt())) {
+//                    if(totalfound == perPeer)
+//                        break
+//                    databases.getPiece(infohash, s.key, (startIndex+index)%2.0.pow(14).toInt()).thenApply {
+//                        if(it !== null)
+//                            res[s.key] = arrayListOf<Long>((startIndex+index)%2.0.pow(14).toInt())
+//                    }
+//                }
                 res[s.key] = arrayListOf<Long>(0)
             }
             res as Map<KnownPeer, List<Long>>
@@ -755,7 +767,11 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
     fun requestedPieces(
         infohash: String
     ): CompletableFuture<Map<KnownPeer, List<Long>>>{
-        return CompletableFuture.completedFuture(requestedFromMe[infohash])
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+            requestedFromMe[infohash]
+        }
     }
 
     /**
@@ -770,13 +786,16 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @return Mapping from file name to file contents.
      */
     fun files(infohash: String): CompletableFuture<Map<String, ByteArray>>{
-        TODO("NOT IMPLEMENTED")
-//        return databases.torrentExists(infohash).thenApply { exists ->
-//            if (!exists)
-//                throw java.lang.IllegalArgumentException()
-//        }.thenCompose {
-//            databases.getFiles(infohash)
-//        }
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+        }.thenCompose {
+            databases.getAllFiles(infohash).thenApply {f ->
+                val res = HashMap<String, ByteArray>()
+                //res["file"] = f
+                res as Map<String, ByteArray>
+            }
+        }
     }
 
     /**
