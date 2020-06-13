@@ -30,6 +30,7 @@ import kotlin.collections.HashSet
 class CourseTorrent @Inject constructor(private val databases: Databases, private val torrentHTTP: ITorrentHTTP) {
     private val peersConnectedToMe = HashMap<KnownPeer, Pair<ConnectedPeer, Socket>>()
     private val peersImConnectedTo = HashMap<KnownPeer, Pair<ConnectedPeer, Socket>>()
+    private val requestedFromMe = HashMap<String, HashMap<KnownPeer, ArrayList<Long>>>()
     private val parser = TorrentParser()
     private val coder = Coder()
     private lateinit var server : ServerSocket
@@ -70,6 +71,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (exists)
                 throw IllegalStateException()
             databases.addTorrent(infohash, torrent, dict)
+            requestedFromMe[infohash] = HashMap()
             infohash
         }
     }
@@ -669,6 +671,11 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                 throw java.lang.IllegalArgumentException()
         }.thenCompose { //TODO: handle execptions
             val s = peersConnectedToMe[peer] ?: throw java.lang.IllegalArgumentException()
+            if(requestedFromMe[infohash]!![peer] === null){
+                requestedFromMe[infohash]!![peer] = arrayListOf(pieceIndex)
+            }else{
+                requestedFromMe[infohash]!![peer]?.add(pieceIndex)
+            }
             s.second.outputStream.write(WireProtocolEncoder.encode(6, ints= *intArrayOf(13, pieceIndex.toInt())))
             CompletableFuture.completedFuture(Unit)
         }
@@ -747,7 +754,9 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      */
     fun requestedPieces(
         infohash: String
-    ): CompletableFuture<Map<KnownPeer, List<Long>>> = TODO("Implement me!")
+    ): CompletableFuture<Map<KnownPeer, List<Long>>>{
+        return CompletableFuture.completedFuture(requestedFromMe[infohash])
+    }
 
     /**
      * Return the downloaded files for torrent [infohash].
