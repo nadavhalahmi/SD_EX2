@@ -323,16 +323,33 @@ class MyTest {
     fun `connects to remote peer`() {
         val infohash = torrent.load(lame).get()
 
-        thread(start = true) {
-            val peerSever = ServerSocket(6888)
-            val sock = peerSever.accept()
-            val output = sock.inputStream.readNBytes(68)
-            sock.outputStream.write(output)
-        }
+        startPeerServer(infohash)
+
         assertDoesNotThrow {
             torrent.connect(infohash, KnownPeer("127.0.0.1", 6888, null)).get() //sends handshake to peer and waits for response
         }
 
+        val knownPeers = torrent.knownPeers(infohash).get()
+        assert(knownPeers.isNotEmpty())
+        assertThat(
+                knownPeers,
+                anyElement(has(KnownPeer::peerId, equalTo(infohash.reversed()))))
+
+
+    }
+
+    private fun startPeerServer(infohash : String) {
+        thread(start = true) {
+            val peerSever = ServerSocket(6888)
+            val sock = peerSever.accept()
+            val output = sock.inputStream.readNBytes(68)
+            sock.outputStream.write(
+                    WireProtocolEncoder.handshake(
+                            hexStringToByteArray(infohash),
+                            hexStringToByteArray(infohash.reversed())
+                    )
+            )
+        }
     }
 
     private fun initiateRemotePeer(infohash: String): Socket {
