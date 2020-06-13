@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="il.ac.technion.cs.softwaredesign.MyTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2020-06-13T14:14:33" hostname="NADAV-LAPTOP" time="2.706">
+<testsuite name="il.ac.technion.cs.softwaredesign.MyTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2020-06-13T15:41:34" hostname="NADAV-LAPTOP" time="2.507">
   <properties/>
-  <testcase name="client announces to tracker()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="1.112"/>
-  <testcase name="sends interested message to peer after receiving a have message()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.159"/>
-  <testcase name="check peers as list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.099"/>
-  <testcase name="first file is good, second bad()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.064"/>
+  <testcase name="client announces to tracker()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="1.142"/>
+  <testcase name="sends interested message to peer after receiving a have message()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.157"/>
+  <testcase name="check peers as list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.145"/>
+  <testcase name="first file is good, second bad()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.194"/>
   <testcase name="sends choke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.02"/>
-  <testcase name="after receiving have message, a piece is marked as available()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.126"/>
-  <testcase name="after load, infohash calculated correctly()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.013"/>
-  <testcase name="check announce failure reason()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.04"/>
+  <testcase name="after receiving have message, a piece is marked as available()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.132"/>
+  <testcase name="after load, infohash calculated correctly()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.021"/>
+  <testcase name="check announce failure reason()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.07"/>
   <testcase name="lame torrent is loaded, wrong file data is loaded, and recheck returns false()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.006"/>
-  <testcase name="peers are invalidated correctly()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.025"/>
-  <testcase name="client scrapes tracker and updates statistics()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.028"/>
-  <testcase name="after shuffle still returns same announce list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.007"/>
-  <testcase name="exceptions are thrown inside the CompletableFuture()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.004"/>
-  <testcase name="starts listening and responds to connection and handshake()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.007"/>
-  <testcase name="lame torrent is loaded, file data is loaded, and recheck returns true()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.055"/>
-  <testcase name="lists remotely connected peer in known and connected peers()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.005"/>
-  <testcase name="sends unchoke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.012"/>
-  <testcase name="after load, announce is correct()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.005"/>
-  <testcase name="after announce, client has up-to-date peer list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.024"/>
-  <testcase name="client recieve announce error()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.013"/>
-  <testcase name="first file is bad, second good()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.01"/>
-  <testcase name="connects to remote peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.551"/>
+  <testcase name="peers are invalidated correctly()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.034"/>
+  <testcase name="client scrapes tracker and updates statistics()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.04"/>
+  <testcase name="after shuffle still returns same announce list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.009"/>
+  <testcase name="exceptions are thrown inside the CompletableFuture()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.008"/>
+  <testcase name="starts listening and responds to connection and handshake()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.013"/>
+  <testcase name="lame torrent is loaded, file data is loaded, and recheck returns true()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.076"/>
+  <testcase name="lists remotely connected peer in known and connected peers()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.008"/>
+  <testcase name="sends unchoke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.017"/>
+  <testcase name="after load, announce is correct()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.008"/>
+  <testcase name="after announce, client has up-to-date peer list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.017"/>
+  <testcase name="client recieve announce error()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.014"/>
+  <testcase name="first file is bad, second good()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.011"/>
+  <testcase name="connects to remote peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.033"/>
   <system-out><![CDATA[Server is running on port 6887
 Server is running on port 6887
 Server is running on port 6887
@@ -30,7 +30,7 @@ Server is running on port 6887
 Server is running on port 6887
 Server is running on port 6887
 ]]></system-out>
-  <system-err><![CDATA[Jun 13, 2020 5:14:32 PM io.mockk.impl.log.JULLogger warn
+  <system-err><![CDATA[Jun 13, 2020 6:41:33 PM io.mockk.impl.log.JULLogger warn
 WARNING: Failed to transform class java/lang/Object
 java.lang.IllegalArgumentException: Unsupported class file major version 58
 	at net.bytebuddy.jar.asm.ClassReader.<init>(ClassReader.java:184)
