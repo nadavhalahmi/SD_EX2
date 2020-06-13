@@ -33,6 +33,14 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
     private val parser = TorrentParser()
     private val coder = Coder()
     private lateinit var server : ServerSocket
+    private val randLen = 6
+    private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
+    private val randomString = (1..randLen)
+            .map { kotlin.random.Random.nextInt(0, charPool.size) }
+            .map(charPool::get)
+            .joinToString("")
+    private val ids = coder.SHAsum(("206784258" + "314628090").toByteArray()).slice(0 until 6)
+    public val myPeerId = "-CS1000-$ids$randomString"
 
     /**
      * Load in the torrent metainfo file from [torrent]. The specification for these files can be found here:
@@ -174,8 +182,6 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
         }.thenCompose {
-            val randLen = 6
-            val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
             announces(infohash = infohash).thenApply { announceList ->
                 var respDict: TorrentDict? = null
                 var newList = announceList.toMutableList()
@@ -197,12 +203,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                             params["downloaded"] = downloaded.toString()
                             params["left"] = left.toString()
                             params["compact"] = "1"
-                            val randomString = (1..randLen)
-                                .map { kotlin.random.Random.nextInt(0, charPool.size) }
-                                .map(charPool::get)
-                                .joinToString("")
-                            val ids = coder.SHAsum(("206784258" + "314628090").toByteArray()).slice(0 until 6)
-                            params["peer_id"] = "-CS1000-$ids$randomString"
+                            params["peer_id"] = myPeerId
                             var resp = torrentHTTP.get(tracker, params)
                             respDict = parser.parse(resp)
                             val peers = HashSet<KnownPeer>()
@@ -486,9 +487,8 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                 sock.outputStream.write(
                         WireProtocolEncoder.handshake(
                                 coder.hexStringToByteArray(infohash),
-                                coder.hexStringToByteArray(infohash.reversed())
+                                myPeerId.toByteArray())
                         )
-                )
                 //peer answers
                 val output = sock.inputStream.readNBytes(68)
 
@@ -655,8 +655,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
         }.thenCompose { //TODO: handle execptions
-            val s = peersConnectedToMe[peer]
-            if(s==null) throw java.lang.IllegalArgumentException()
+            val s = peersConnectedToMe[peer] ?: throw java.lang.IllegalArgumentException()
             s.outputStream.write(WireProtocolEncoder.encode(6, ints= *intArrayOf(13, pieceIndex.toInt())))
             CompletableFuture.completedFuture(Unit)
         }
