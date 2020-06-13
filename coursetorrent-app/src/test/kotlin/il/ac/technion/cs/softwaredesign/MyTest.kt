@@ -320,6 +320,34 @@ class MyTest {
     }
 
     @Test
+    fun `check sendPieceToMyself`() {
+        val myPeerId = torrent.myPeerId
+        val myPeer = KnownPeer("127.0.0.1,", 6888, myPeerId)
+        val infohash = torrent.load(lame).get()
+        val x = torrent.sendPiece(infohash, myPeer, 0L)
+        val existsAndOk = verifyPieceExistsAndOk(0L)
+        assert(existsAndOk)
+    }
+
+    @Test
+    fun `check sendPieceToAnotherPeer`() {
+        val infohash = torrent.load(lame).get()
+        startPeerServer(infohash)
+        val anotherPeer = KnownPeer("127.0.0.1", 6888, infohash.reversed())
+        torrent.connect(infohash, anotherPeer).get() //sends handshake to peer and waits for response
+        val x = torrent.sendPiece(infohash, anotherPeer, 0L)
+        val existsAndOk = verifyPieceExistsAndOk(0L)
+        assert(existsAndOk)
+    }
+
+    /**
+     * Check that pieceId exists, calculate its hash and compare to the expected hash
+     */
+    private fun verifyPieceExistsAndOk(pieceId: Long) : Boolean {
+        return false
+    }
+
+    @Test
     fun `connects to remote peer`() {
         val infohash = torrent.load(lame).get()
 

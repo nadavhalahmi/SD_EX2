@@ -685,7 +685,19 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      *
      * @throws IllegalArgumentException if [infohash] is not loaded, [peer] is not known, or [peer] did not request [pieceIndex].
      */
-    fun sendPiece(infohash: String, peer: KnownPeer, pieceIndex: Long): CompletableFuture<Unit> = TODO("Implement me!")
+    fun sendPiece(infohash: String, peer: KnownPeer, pieceIndex: Long): CompletableFuture<Unit> {
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+        }.thenCompose { //TODO: handle execptions
+            databases.getPiece(infohash, pieceIndex.toString()).thenApply { piece ->
+                val s = peersConnectedToMe[peer] ?: throw java.lang.IllegalArgumentException()
+                s.second.outputStream.write(WireProtocolEncoder.encode(7, ints= *intArrayOf(13, pieceIndex.toInt())))
+
+            }
+            CompletableFuture.completedFuture(Unit)
+        }
+    }
 
     /**
      * List pieces that are currently available for download immediately.

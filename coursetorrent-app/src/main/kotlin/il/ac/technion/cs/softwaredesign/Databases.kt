@@ -25,6 +25,7 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
     private val trackersDB = db_factory.open("trackers".toByteArray(charset))
     private val torrentsStatsDB = db_factory.open("torrents_statistics".toByteArray(charset))
     private val filesDB = db_factory.open("files".toByteArray(charset))
+    private val piecesDB = db_factory.open("pieces".toByteArray(charset))
     private val storageManager = StorageManager()
 
     /**
@@ -207,6 +208,18 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
     private fun torrentStatsExists(hash: String): CompletableFuture<Boolean> {
         return torrentsStatsDB.thenCompose { db ->
             storageManager.exists(db, hash)
+        }
+    }
+
+    fun addPiece(hash: String, key: String, value: ByteArray): CompletableFuture<Unit> {
+        return piecesDB.thenCompose { db ->
+            storageManager.setValue(db, hash, key, value)
+        }
+    }
+
+    fun getPiece(hash: String, key: String): CompletableFuture<ByteArray?> {
+        return piecesDB.thenCompose { db ->
+            storageManager.getValue(db, hash, key)
         }
     }
 
