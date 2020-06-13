@@ -108,6 +108,8 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
         }
     }
 
+
+
     fun updateTracker(hash: String,tracker: String, stats: TorrentDict?) : CompletableFuture<Unit> {
         return trackersDB.thenCombine(trackerExists(hash, tracker)) { db, exists ->
             if (stats != null) {
@@ -229,6 +231,18 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
     fun getAllFiles(infohash: String) : CompletableFuture<ByteArray?>{
         return filesDB.thenCompose { db ->
             storageManager.getValue(db, infohash, "")
+        }
+    }
+
+    fun updatePeerId(hash: String, peer: KnownPeer, otherPeerId: ByteArray): CompletableFuture<Unit> {
+        return peersDB.thenCompose { db ->
+            storageManager.setValue(db, hash, "${peer.ip}-${peer.port}", otherPeerId)
+        }
+    }
+
+    fun getPeerId(hash: String, ip: String, port: Int): CompletableFuture<ByteArray?> {
+        return peersDB.thenCompose { db ->
+            storageManager.getValue(db, hash, "${ip}-${port}")
         }
     }
 }

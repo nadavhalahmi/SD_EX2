@@ -321,10 +321,16 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                             val currPeer = p.value() as TorrentDict
                             val port = (currPeer["port"]?.value() as Long).toInt()
                             val ip = currPeer["ip"]?.value() as String
-                            val peer = KnownPeer(ip, port, null)
-                            databases.peerIsValid(infohash, peer).thenApply { valid ->
-                                if (valid)
-                                    res.add(peer)
+                            databases.getPeerId(infohash, ip, port).thenApply { id ->
+                                val peer = if(id === null) {
+                                    KnownPeer(ip, port, null)
+                                } else{
+                                    KnownPeer(ip, port, coder.byteArray2Hex(id))
+                                }
+                                databases.peerIsValid(infohash, peer).thenApply { valid ->
+                                    if (valid)
+                                        res.add(peer)
+                                }
                             }
                         }
                     } else {
@@ -333,9 +339,16 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                         for (i in start until end step 6) {
                             val (ip, port) = coder.get_ip_port(peersBytes.copyOfRange(i, i + 6))
                             val peer = KnownPeer(ip, port, null)
-                            databases.peerIsValid(infohash, peer).thenApply { valid ->
-                                if (valid)
-                                    res.add(peer)
+                            databases.getPeerId(infohash, ip, port).thenApply { id ->
+                                val peer = if(id === null) {
+                                    KnownPeer(ip, port, null)
+                                } else{
+                                    KnownPeer(ip, port, coder.byteArray2Hex(id))
+                                }
+                                databases.peerIsValid(infohash, peer).thenApply { valid ->
+                                    if (valid)
+                                        res.add(peer)
+                                }
                             }
                         }
                     }
@@ -480,6 +493,8 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                 val output = sock.inputStream.readNBytes(68)
 
                 val (otherInfohash, otherPeerId) = StaffWireProtocolDecoder.handshake(output)
+
+                databases.updatePeerId(infohash, peer, otherPeerId)
 
                 //Assertions.assertTrue(otherInfohash.contentEquals(hexStringToByteArray(infohash)))
 

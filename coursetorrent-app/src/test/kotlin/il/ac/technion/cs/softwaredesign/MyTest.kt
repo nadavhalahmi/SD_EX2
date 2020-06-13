@@ -323,6 +323,23 @@ class MyTest {
     fun `connects to remote peer`() {
         val infohash = torrent.load(lame).get()
 
+        var resp = "d8:intervali360e5:peers"
+        val peers = listOf(Pair("127.0.0.1", 6888))
+        resp += "6:"+ testUtils.buildPeersValueAsBinaryString(peers) + "e"
+
+        //not sure my ISO... and not UTF8 but it works
+        every {torrentHTTPMock.get(any(), any())} returns resp.toByteArray(Charsets.ISO_8859_1)
+
+        torrent.torrentStats(infohash).thenCompose {
+            torrent.announce(
+                    infohash,
+                    TorrentEvent.STARTED,
+                    uploaded = it.uploaded,
+                    downloaded = it.downloaded,
+                    left = it.left
+            )
+        }.join()
+
         startPeerServer(infohash)
 
         assertDoesNotThrow {
@@ -339,6 +356,7 @@ class MyTest {
     }
 
     private fun startPeerServer(infohash : String) {
+
         thread(start = true) {
             val peerSever = ServerSocket(6888)
             val sock = peerSever.accept()
