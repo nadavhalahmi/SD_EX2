@@ -3,6 +3,9 @@ import java.security.MessageDigest
 import java.util.*
 
 class Coder {
+    @ExperimentalUnsignedTypes
+    fun hexStringToByteArray(input: String) = input.chunked(2).map { it.toUpperCase().toUByte(16).toByte() }.toByteArray()
+
     fun SHAsum(convertme: ByteArray) : String{
         val md = MessageDigest.getInstance("SHA-1");
         return byteArray2Hex(md.digest(convertme));
@@ -38,6 +41,7 @@ class Coder {
         return res.toString(Charsets.UTF_8)
     }
 
+    @ExperimentalUnsignedTypes
     fun get_ip_port(bytes: ByteArray): Pair<String, Int> {
         assert(bytes.size == 6)
         var ip = bytes[0].toUByte().toString()

@@ -26,7 +26,7 @@ dependencies {
     testImplementation("com.natpryce", "hamkrest", hamkrestVersion)
     implementation("io.mockk", "mockk", mockkVersion) //TODO: CHANGE TO testImplementation
 
-
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.3.7")
     // For main
     implementation("com.xenomachina", "kotlin-argparser", "2.0.7")
 }

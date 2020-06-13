@@ -23,7 +23,7 @@
 <tr>
 <td>
 <div class="infoBox" id="tests">
-<div class="counter">1</div>
+<div class="counter">22</div>
 <p>tests</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1.679s</div>
+<div class="counter">1.744s</div>
 <p>duration</p>
 </div>
 </td>
@@ -81,8 +81,113 @@
 </tr>
 </thead>
 <tr>
+<td class="success">after announce, client has up-to-date peer list()</td>
+<td class="success">0.022s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">after load, announce is correct()</td>
+<td class="success">0.005s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">after load, infohash calculated correctly()</td>
+<td class="success">0.016s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">after receiving have message, a piece is marked as available()</td>
+<td class="success">0.123s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">after shuffle still returns same announce list()</td>
+<td class="success">0.009s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">check announce failure reason()</td>
+<td class="success">0.044s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">check peers as list()</td>
+<td class="success">0.129s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">client announces to tracker()</td>
+<td class="success">0.949s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">client recieve announce error()</td>
+<td class="success">0.013s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">client scrapes tracker and updates statistics()</td>
+<td class="success">0.028s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">connects to remote peer()</td>
+<td class="success">0.012s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">exceptions are thrown inside the CompletableFuture()</td>
+<td class="success">0.007s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">first file is bad, second good()</td>
+<td class="success">0.012s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">first file is good, second bad()</td>
+<td class="success">0.085s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">lame torrent is loaded, file data is loaded, and recheck returns true()</td>
+<td class="success">0.062s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">lame torrent is loaded, wrong file data is loaded, and recheck returns false()</td>
+<td class="success">0.005s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">lists remotely connected peer in known and connected peers()</td>
+<td class="success">0.008s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">peers are invalidated correctly()</td>
+<td class="success">0.021s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">sends choke command to peer()</td>
+<td class="success">0.017s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">sends interested message to peer after receiving a have message()</td>
+<td class="success">0.157s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
 <td class="success">sends unchoke command to peer()</td>
-<td class="success">1.679s</td>
+<td class="success">0.013s</td>
+<td class="success">passed</td>
+</tr>
+<tr>
+<td class="success">starts listening and responds to connection and handshake()</td>
+<td class="success">0.007s</td>
 <td class="success">passed</td>
 </tr>
 </table>
@@ -91,13 +196,18 @@
 <h2>Standard output</h2>
 <span class="code">
 <pre>Server is running on port 6887
+Server is running on port 6887
+Server is running on port 6887
+Server is running on port 6887
+Server is running on port 6887
+Server is running on port 6887
 </pre>
 </span>
 </div>
 <div id="tab2" class="tab">
 <h2>Standard error</h2>
 <span class="code">
-<pre>Jun 11, 2020 8:27:00 PM io.mockk.impl.log.JULLogger warn
+<pre>Jun 13, 2020 3:40:05 PM io.mockk.impl.log.JULLogger warn
 WARNING: Failed to transform class java/lang/Object
 java.lang.IllegalArgumentException: Unsupported class file major version 58
 	at net.bytebuddy.jar.asm.ClassReader.&lt;init&gt;(ClassReader.java:184)
@@ -134,7 +244,7 @@ java.lang.IllegalArgumentException: Unsupported class file major version 58
 	at com.google.inject.Guice.createInjector(Guice.java:87)
 	at com.google.inject.Guice.createInjector(Guice.java:69)
 	at com.google.inject.Guice.createInjector(Guice.java:59)
-	at il.ac.technion.cs.softwaredesign.MyTest.&lt;init&gt;(MyTest.kt:19)
+	at il.ac.technion.cs.softwaredesign.MyTest.&lt;init&gt;(MyTest.kt:21)
 	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
 	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
 	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
@@ -236,7 +346,7 @@ java.lang.IllegalArgumentException: Unsupported class file major version 58
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 6.3</a> at Jun 11, 2020, 8:27:03 PM</p>
+<a href="http://www.gradle.org">Gradle 6.3</a> at Jun 13, 2020, 3:40:08 PM</p>
 </div>
 </div>
 </body>

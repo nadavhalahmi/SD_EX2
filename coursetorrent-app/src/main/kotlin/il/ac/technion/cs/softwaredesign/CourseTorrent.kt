@@ -14,13 +14,10 @@ import il.ac.technion.cs.softwaredesign.exceptions.PieceHashException
 import il.ac.technion.cs.softwaredesign.exceptions.TrackerException
 import java.net.ServerSocket
 import java.net.Socket
-import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.HashSet
-import kotlin.concurrent.thread
-import kotlin.system.exitProcess
 
 /**
  * This is the class implementing CourseTorrent, a BitTorrent client.
@@ -31,7 +28,8 @@ import kotlin.system.exitProcess
  * + Communication with peers (downloading! uploading!)
  */
 class CourseTorrent @Inject constructor(private val databases: Databases, private val torrentHTTP: ITorrentHTTP) {
-    private val activeSockets = HashMap<KnownPeer, Socket>()
+    private val peersConnectedToMe = HashMap<KnownPeer, Socket>()
+    private val peersImConnectedTo = HashMap<KnownPeer, Socket>()
     private val parser = TorrentParser()
     private val coder = Coder()
     private lateinit var server : ServerSocket
@@ -435,7 +433,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @throws IllegalStateException If not listening.
      */
     fun stop(): CompletableFuture<Unit>{
-        activeSockets.map { it -> it.value.close() }
+        peersConnectedToMe.map { it -> it.value.close() }
         server.close()
         return CompletableFuture.completedFuture(Unit)
     }
@@ -464,7 +462,33 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @throws IllegalArgumentException if [infohash] is not loaded or [peer] is not known.
      * @throws PeerConnectException if the connection to [peer] failed (timeout, connection closed after handshake, etc.)
      */
-    fun connect(infohash: String, peer: KnownPeer): CompletableFuture<Unit> = TODO("Implement me!")
+    fun connect(infohash: String, peer: KnownPeer): CompletableFuture<Unit>{
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+        }.thenCompose {
+            try {
+                val sock = Socket(peer.ip, peer.port)
+                peersImConnectedTo[peer] = sock
+                sock.outputStream.write(
+                        WireProtocolEncoder.handshake(
+                                coder.hexStringToByteArray(infohash),
+                                coder.hexStringToByteArray(infohash.reversed())
+                        )
+                )
+                //peer answers
+                val output = sock.inputStream.readNBytes(68)
+
+                val (otherInfohash, otherPeerId) = StaffWireProtocolDecoder.handshake(output)
+
+                //Assertions.assertTrue(otherInfohash.contentEquals(hexStringToByteArray(infohash)))
+
+            } catch (e: Exception) {
+                throw PeerConnectException(e.toString())
+            }
+            CompletableFuture.completedFuture(Unit)
+        }
+    }
 
     /**
      * Disconnect from [peer] by closing the connection.
@@ -487,8 +511,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * @throws IllegalArgumentException if [infohash] is not loaded.
      */
     fun connectedPeers(infohash: String): CompletableFuture<List<ConnectedPeer>>{
-        val ports = activeSockets.map { it.value.port }
-        val lst = activeSockets.map { it ->
+        val lst = peersConnectedToMe.map { it ->
             ConnectedPeer(KnownPeer(it.value.inetAddress.toString(), it.value.port, ""), amChoking = true,
                     amInterested = true, averageSpeed = 0.0, completedPercentage = 0.0, peerChoking = true,
                     peerInterested = true)
@@ -509,7 +532,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
         }.thenCompose {
-            val s = activeSockets[peer]
+            val s = peersConnectedToMe[peer]
             if(s==null) throw java.lang.IllegalArgumentException()
             s.outputStream.write(WireProtocolEncoder.encode(0))
             CompletableFuture.completedFuture(Unit)
@@ -529,7 +552,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
         }.thenCompose {
-            val s = activeSockets[peer]
+            val s = peersConnectedToMe[peer]
             if(s==null) throw java.lang.IllegalArgumentException()
             s.outputStream.write(WireProtocolEncoder.encode(1))
             CompletableFuture.completedFuture(Unit)
@@ -567,11 +590,26 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
      * This is an *update* command. (maybe)
      */
     fun handleSmallMessages(): CompletableFuture<Unit>{
-
-        val s = server.accept()
-        val output = s.inputStream.readNBytes(68)
-        s.outputStream.write(output)
-        activeSockets[KnownPeer(ip = s.inetAddress.toString(), port = s.port, peerId = "")] = s
+        try {
+            server.soTimeout = 100
+            val s = server.accept()
+            val output = s.inputStream.readNBytes(68)
+            s.outputStream.write(output)
+            peersConnectedToMe[KnownPeer(ip = s.inetAddress.toString(), port = s.port, peerId = "")] = s
+        }catch (e: Exception){
+            for(s in peersConnectedToMe.values){
+                val avail = s.inputStream.available()
+                if(avail > 0){
+                    val curr_out = s.inputStream.readNBytes(avail)
+                    val message = WireProtocolDecoder.decode(curr_out, 0)
+//                    when(message.messageId){
+//                        4 ->
+//                    }
+                }
+                s.outputStream.write(WireProtocolEncoder.encode(2))
+            }
+            return CompletableFuture.completedFuture(Unit)
+        }
         return CompletableFuture.completedFuture(Unit)
     }
 
@@ -602,7 +640,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
             if (!exists)
                 throw java.lang.IllegalArgumentException()
         }.thenCompose { //TODO: handle execptions
-            val s = activeSockets[peer]
+            val s = peersConnectedToMe[peer]
             if(s==null) throw java.lang.IllegalArgumentException()
             s.outputStream.write(WireProtocolEncoder.encode(6, ints= *intArrayOf(13, pieceIndex.toInt())))
             CompletableFuture.completedFuture(Unit)
@@ -646,7 +684,18 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
         infohash: String,
         perPeer: Long,
         startIndex: Long
-    ): CompletableFuture<Map<KnownPeer, List<Long>>> = TODO("Implement me!")
+    ): CompletableFuture<Map<KnownPeer, List<Long>>> {
+        val res = HashMap<KnownPeer, ArrayList<Long>>()
+        return databases.torrentExists(infohash).thenApply { exists ->
+            if (!exists)
+                throw java.lang.IllegalArgumentException()
+        }.thenApply {
+            for(s in peersConnectedToMe) {
+                res[s.key] = arrayListOf<Long>(0)
+            }
+            res as Map<KnownPeer, List<Long>>
+        }
+    }
 
     /**
      * List pieces that have been requested by (unchoked) peers.

@@ -11,8 +11,10 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
+import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.CompletionException
+import kotlin.concurrent.thread
 
 class MyTest {
     //companion object {
@@ -299,7 +301,7 @@ class MyTest {
         torrent.stop().get()
         sock.close()
     }
-//
+
     @Test
     fun `sends interested message to peer after receiving a have message`() {
         val infohash = torrent.load(lame).get()
@@ -315,6 +317,34 @@ class MyTest {
 
         torrent.stop().get()
         sock.close()
+    }
+
+    @Test
+    fun `connects to remote peer`() {
+        val infohash = torrent.load(lame).get()
+
+        val peerSever = ServerSocket(6888)
+        thread(start = true) {
+            print("thread started")
+            assertDoesNotThrow {
+                torrent.connect(infohash, KnownPeer("127.0.0.1", 6888, null)).get() //sends handshake to peer and waits for response
+            }
+        }
+        val sock = peerSever.accept()
+//        val output = sock.inputStream.readNBytes(68)
+//        sock.outputStream.write(
+//                WireProtocolEncoder.handshake(
+//                        hexStringToByteArray(infohash),
+//                        hexStringToByteArray(infohash.reversed())
+//                )
+//        ) //sends response back to me
+//
+//        assertDoesNotThrow { torrent.handleSmallMessages().join() }
+//
+//        //val output = sock.inputStream.readNBytes(68)
+//
+//        val (otherInfohash, otherPeerId) = StaffWireProtocolDecoder.handshake(output)
+
     }
 
     private fun initiateRemotePeer(infohash: String): Socket {

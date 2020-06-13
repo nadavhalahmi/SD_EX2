@@ -1,10 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="il.ac.technion.cs.softwaredesign.MyTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2020-06-11T17:27:01" hostname="NADAV-LAPTOP" time="1.679">
+<testsuite name="il.ac.technion.cs.softwaredesign.MyTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2020-06-13T12:40:06" hostname="NADAV-LAPTOP" time="2.016">
   <properties/>
-  <testcase name="sends unchoke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="1.679"/>
+  <testcase name="client announces to tracker()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.949"/>
+  <testcase name="sends interested message to peer after receiving a have message()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.157"/>
+  <testcase name="check peers as list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.129"/>
+  <testcase name="first file is good, second bad()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.085"/>
+  <testcase name="sends choke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.017"/>
+  <testcase name="after receiving have message, a piece is marked as available()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.123"/>
+  <testcase name="after load, infohash calculated correctly()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.016"/>
+  <testcase name="check announce failure reason()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.044"/>
+  <testcase name="lame torrent is loaded, wrong file data is loaded, and recheck returns false()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.005"/>
+  <testcase name="peers are invalidated correctly()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.021"/>
+  <testcase name="client scrapes tracker and updates statistics()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.028"/>
+  <testcase name="after shuffle still returns same announce list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.009"/>
+  <testcase name="exceptions are thrown inside the CompletableFuture()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.007"/>
+  <testcase name="starts listening and responds to connection and handshake()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.007"/>
+  <testcase name="lame torrent is loaded, file data is loaded, and recheck returns true()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.062"/>
+  <testcase name="lists remotely connected peer in known and connected peers()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.008"/>
+  <testcase name="sends unchoke command to peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.013"/>
+  <testcase name="after load, announce is correct()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.005"/>
+  <testcase name="after announce, client has up-to-date peer list()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.022"/>
+  <testcase name="client recieve announce error()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.013"/>
+  <testcase name="first file is bad, second good()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.012"/>
+  <testcase name="connects to remote peer()" classname="il.ac.technion.cs.softwaredesign.MyTest" time="0.012"/>
   <system-out><![CDATA[Server is running on port 6887
+Server is running on port 6887
+Server is running on port 6887
+Server is running on port 6887
+Server is running on port 6887
+Server is running on port 6887
 ]]></system-out>
-  <system-err><![CDATA[Jun 11, 2020 8:27:00 PM io.mockk.impl.log.JULLogger warn
+  <system-err><![CDATA[Jun 13, 2020 3:40:05 PM io.mockk.impl.log.JULLogger warn
 WARNING: Failed to transform class java/lang/Object
 java.lang.IllegalArgumentException: Unsupported class file major version 58
 	at net.bytebuddy.jar.asm.ClassReader.<init>(ClassReader.java:184)
@@ -41,7 +67,7 @@ java.lang.IllegalArgumentException: Unsupported class file major version 58
 	at com.google.inject.Guice.createInjector(Guice.java:87)
 	at com.google.inject.Guice.createInjector(Guice.java:69)
 	at com.google.inject.Guice.createInjector(Guice.java:59)
-	at il.ac.technion.cs.softwaredesign.MyTest.<init>(MyTest.kt:19)
+	at il.ac.technion.cs.softwaredesign.MyTest.<init>(MyTest.kt:21)
 	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
 	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:62)
 	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
