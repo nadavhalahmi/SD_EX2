@@ -1,22 +1,22 @@
-# CourseApp: Assignment 0
+# CourseApp: Assignment 1
 
 ## Authors
-* Firstname McLastname, ID number
-* Firstnamey Lastnameson, ID number
+* Nadav Halahmi, 206784258
+* Adva Bitan, 314628090
 
 ## Notes
 
 ### Implementation Summary
-Short summary of your implementation, including data structures used, design choices made, and
-a short tour of the class hierarchy you created.
+Now we have 3 main databases: torrentsDB, trackersDB and peersDB.
+torrentsDB holds for each torrent weather the torrent exists or not, it's announce-list and/or announce, and it's peers.
+trackersDB holds for each torrent's tracker it's scrape data (stats), or failuere reason if there was a failuere last time trying to connect to it.
+peersDB holds for each torrent's peer if it's valid or not.
 
 ### Testing Summary
-Short summary describing the ways you chose to test your code.
+Each function of courseTorrentApp was tested.
 
 ### Difficulties
-Please list any technological difficulties you had while working on this assignment, especially
-with the tools used: Kotlin, JUnit, MockK, and Gradle.
+Getting used to guice and using mocks with guice was hard.
 
 ### Feedback
-Put any feedback you may have for this assignment here. This **will** be read by the course staff,
-and may influence future assignments!
+Facebook QA was great! Thanks!
