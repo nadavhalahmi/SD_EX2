@@ -331,19 +331,8 @@ class MyTest {
             }
         }
         val sock = peerSever.accept()
-//        val output = sock.inputStream.readNBytes(68)
-//        sock.outputStream.write(
-//                WireProtocolEncoder.handshake(
-//                        hexStringToByteArray(infohash),
-//                        hexStringToByteArray(infohash.reversed())
-//                )
-//        ) //sends response back to me
-//
-//        assertDoesNotThrow { torrent.handleSmallMessages().join() }
-//
-//        //val output = sock.inputStream.readNBytes(68)
-//
-//        val (otherInfohash, otherPeerId) = StaffWireProtocolDecoder.handshake(output)
+        val output = sock.inputStream.readNBytes(68)
+        sock.outputStream.write(output)
 
     }
 
