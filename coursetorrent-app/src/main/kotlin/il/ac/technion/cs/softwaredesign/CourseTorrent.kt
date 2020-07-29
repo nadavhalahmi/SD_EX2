@@ -207,6 +207,7 @@ class CourseTorrent @Inject constructor(private val databases: Databases, privat
                             params["left"] = left.toString()
                             params["compact"] = "1"
                             params["peer_id"] = myPeerId
+                            params["port"] = "6887"
                             var resp = torrentHTTP.get(tracker, params)
                             respDict = parser.parse(resp)
                             val peers = HashSet<KnownPeer>()

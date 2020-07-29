@@ -8,7 +8,7 @@ import java.nio.ByteOrder
  * You can modify, delete, replace, or do anything else with this file.
  */
 
-object StaffWireProtocolEncoder {
+internal object StaffWireProtocolEncoder {
     /**
      * Encode a message of type [messageId] with several int fields.
      */
@@ -18,7 +18,7 @@ object StaffWireProtocolEncoder {
      * Encode a message of type [messageId] with several int fields then a string block of [contents].
      */
     fun encode(messageId: Byte, contents: ByteArray = ByteArray(0), vararg ints: Int): ByteArray {
-        val length = 1 + ints.size*4 + contents.size
+        val length = 1 + ints.size * 4 + contents.size
         val bb = ByteBuffer.allocate(length + 4)
         bb.order(ByteOrder.BIG_ENDIAN)
         bb.putInt(length)
@@ -39,13 +39,13 @@ object StaffWireProtocolEncoder {
     }
 }
 
-object StaffWireProtocolDecoder {
+internal object StaffWireProtocolDecoder {
     /**
      * Given [message], a valid (maybe partial, at least 4 bytes) bittorrent message, return its stated length.
      *
      * Use this to figure out how much to receive.
      */
-    fun length(message: ByteArray): Int = ByteBuffer.wrap(message).order(ByteOrder.BIG_ENDIAN).getInt()
+    fun length(message: ByteArray): Int = ByteBuffer.wrap(message).order(ByteOrder.BIG_ENDIAN).int
 
     /**
      * Given [message], a valid (full, including length) bittorrent message, return the message ID.
@@ -62,7 +62,7 @@ object StaffWireProtocolDecoder {
         val bb = ByteBuffer.wrap(message)
         bb.order(ByteOrder.BIG_ENDIAN)
         val length = bb.getInt()
-        val contentsLength = length - numOfInts*4 - 1
+        val contentsLength = length - numOfInts * 4 - 1
         val messageId = bb.get()
         val ints = numOfInts.downTo(1).map { bb.getInt() }
         val contents = ByteArray(contentsLength) // This is an allocation
@@ -82,7 +82,7 @@ object StaffWireProtocolDecoder {
     }
 }
 
-data class StaffDecodedHandshake(
+internal data class StaffDecodedHandshake(
     val infohash: ByteArray,
     val peerId: ByteArray
 ) {
@@ -105,7 +105,7 @@ data class StaffDecodedHandshake(
     }
 }
 
-data class StaffDecodedMessage(
+internal data class StaffDecodedMessage(
     val length: Int,
     val messageId: Byte,
     val ints: List<Int>,
@@ -130,6 +130,139 @@ data class StaffDecodedMessage(
         result = 31 * result + messageId
         result = 31 * result + ints.hashCode()
         result = 31 * result + contents.contentHashCode()
+        return result
+    }
+}
+
+internal sealed class Message(val id: Byte, val length: Long) {
+    companion object {
+        fun decode(raw: ByteArray): Message {
+            val len = StaffWireProtocolDecoder.length(raw)
+            if (len == 0) {
+                assert(raw contentEquals ByteArray(4) { 0 })
+                return KeepAlive
+            }
+            assert(len > 0) { "len is ${len}" }
+            return when (StaffWireProtocolDecoder.messageId(raw)) {
+                Choke.id -> Choke
+                Unchoke.id -> Unchoke
+                Interested.id -> Interested
+                Uninterested.id -> Uninterested
+                Have.id -> {
+                    val d = StaffWireProtocolDecoder.decode(raw, Have.numOfInts)
+                    Have(d.ints[0])
+                }
+                Bitfield.id -> {
+                    val d = StaffWireProtocolDecoder.decode(raw, Bitfield.numOfInts)
+                    Bitfield(d.contents)
+                }
+                Request.id -> {
+                    val d = StaffWireProtocolDecoder.decode(raw, Request.numOfInts)
+                    Request(d.ints[0], d.ints[1], d.ints[2])
+                }
+                Piece.id -> {
+                    val d = StaffWireProtocolDecoder.decode(raw, Piece.numOfInts)
+                    Piece(d.ints[0], d.ints[1], d.contents)
+                }
+                else -> throw RuntimeException("Unknown message (id: ${raw[5]})")
+            }
+        }
+    }
+
+    open fun encode(): ByteArray {
+        return StaffWireProtocolEncoder.encode(id)
+    }
+}
+
+internal object KeepAlive : Message(-1, 0) {
+    override fun encode(): ByteArray {
+        return ByteArray(4) { 0 }
+    }
+}
+
+internal object Choke : Message(0, 1)
+
+internal object Unchoke : Message(1, 1)
+
+internal object Interested : Message(2, 1)
+
+internal object Uninterested : Message(3, 1)
+
+internal data class Have(val pieceIndex: Int) : Message(4, 1) {
+    companion object {
+        const val id: Byte = 4
+        const val numOfInts = 1
+    }
+
+    override fun encode(): ByteArray {
+        return StaffWireProtocolEncoder.encode(id, pieceIndex)
+    }
+}
+
+internal data class Bitfield(val bitfield: ByteArray) : Message(5, 1L + bitfield.size) {
+    companion object {
+        const val id: Byte = 5
+        const val numOfInts = 0
+    }
+
+    override fun encode(): ByteArray {
+        return StaffWireProtocolEncoder.encode(id, bitfield)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Bitfield
+
+        if (!bitfield.contentEquals(other.bitfield)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return bitfield.contentHashCode()
+    }
+}
+
+internal data class Request(val pieceIndex: Int, val begin: Int, val amount: Int) : Message(6, 13) {
+    companion object {
+        const val id: Byte = 6
+        const val numOfInts = 3
+    }
+
+    override fun encode(): ByteArray {
+        return StaffWireProtocolEncoder.encode(id, pieceIndex, begin, amount)
+    }
+}
+
+internal data class Piece(val pieceIndex: Int, val begin: Int, val block: ByteArray) : Message(7, 9L + block.size) {
+    companion object {
+        const val id: Byte = 7
+        const val numOfInts = 2
+    }
+
+    override fun encode(): ByteArray {
+        return StaffWireProtocolEncoder.encode(id, block, pieceIndex, begin)
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Piece
+
+        if (pieceIndex != other.pieceIndex) return false
+        if (begin != other.begin) return false
+        if (!block.contentEquals(other.block)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = pieceIndex
+        result = 31 * result + begin
+        result = 31 * result + block.contentHashCode()
         return result
     }
 }

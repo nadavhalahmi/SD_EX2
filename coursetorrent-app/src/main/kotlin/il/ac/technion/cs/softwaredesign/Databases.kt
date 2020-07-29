@@ -153,37 +153,36 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
         }
     }
 
-    fun getTrackerStats(hash: String, tracker: String): CompletableFuture<Scrape?> {
+    fun getTrackerStats(hash: String, tracker: String): CompletableFuture<ScrapeData?> {
         //TODO: deal with tacker failed
-        return trackersDB.thenCombine(trackerExists(hash, tracker)) { db, exists ->
-            if (exists) {
-                val complete =
-                    storageManager.getValue(db, "$hash-$tracker", "complete").thenApply{res -> res?.toString(charset)!!.toInt() }
-                val downloaded =
-                    storageManager.getValue(db, "$hash-$tracker", "downloaded").thenApply{res -> res?.toString(charset)!!.toInt() }
-                val incomplete =
-                    storageManager.getValue(db, "$hash-$tracker", "incomplete").thenApply{res -> res?.toString(charset)!!.toInt() }
-                val name = storageManager.getValue(db, "$hash-$tracker", "name").thenApply{res -> res?.toString(charset)}
+        return trackerExists(hash,tracker).thenCompose {exists ->
+            if(exists) {
 
-//                CompletableFuture.completedFuture(CompletableFuture.allOf(
-//                        complete, downloaded, incomplete, name)
-//                        .thenCompose { _ ->
-//                            Scrape(complete.get(), downloaded.get(), incomplete.get(), name.get())
-//                        })
-                //val futures = listOf<CompletableFuture<*>>(complete, downloaded, incomplete, name)
-
-                Scrape(complete.get(), downloaded.get(), incomplete.get(), name.get()) //TODO: FIX
-            }
-            else {
-                null
+                trackersDB.thenApply { db ->
+                    val complete =
+                            storageManager.getValue(db, "$hash-$tracker", "complete").thenApply { res -> res?.toString(charset)!!.toInt() }
+                    val downloaded =
+                            storageManager.getValue(db, "$hash-$tracker", "downloaded").thenApply { res -> res?.toString(charset)!!.toInt() }
+                    val incomplete =
+                            storageManager.getValue(db, "$hash-$tracker", "incomplete").thenApply { res -> res?.toString(charset)!!.toInt() }
+                    val name = storageManager.getValue(db, "$hash-$tracker", "name").thenApply { res -> res?.toString(charset) }
+                    CompletableFuture.completedFuture(listOf(complete, downloaded, incomplete, name))
+                }.thenCompose {
+                    it.thenApply {
+                        Scrape(it[0] as Int, it[1] as Int, it[2] as Int, it[3] as String) as ScrapeData?
+                    }
+                }
+            }else{
+                CompletableFuture.completedFuture(null as ScrapeData?)
             }
         }
     }
 
     fun getTorrentStats(hash: String): CompletableFuture<TorrentStats>{
-        return torrentsStatsDB.thenCombine(torrentStatsExists(hash)) { db, exists ->
-            if (exists) {
-                val uploaded =
+        return torrentStatsExists(hash).thenCompose {exists ->
+            if(exists) {
+                torrentsStatsDB.thenApply { db ->
+                    val uploaded =
                         storageManager.getValue(db, hash, "uploaded").thenApply{res -> res?.toString(charset)!!.toLong() }
                 val downloaded =
                         storageManager.getValue(db, hash, "downloaded").thenApply{res -> res?.toString(charset)!!.toLong() }
@@ -196,11 +195,17 @@ class Databases @Inject constructor(private val db_factory: SecureStorageFactory
                 val leechTime = storageManager.getValue(db, hash, "leechTime").thenApply{res -> res?.toString(charset)!!.toLong() }//TODO: FIX
                 val seedTime = storageManager.getValue(db, hash, "seedTime").thenApply{res -> res?.toString(charset)!!.toLong() }//TODO: FIX
 
-                TorrentStats(uploaded.get(), downloaded.get(), left.get(), wasted.get(), shareRatio.get(), pieces.get(), havePieces.get(), Duration.ZERO, Duration.ZERO) //TODO: FIX
-            }
-            else {
-                storageManager.setExists(db, hash)
-                TorrentStats(0, 0, 0, 0, 0.0, 0, 0, Duration.ZERO, Duration.ZERO)
+                CompletableFuture.completedFuture(listOf(uploaded, downloaded, left, wasted, shareRatio, pieces, havePieces, leechTime, seedTime))
+                }.thenCompose {
+                    it.thenApply {
+                        TorrentStats(it[0] as Long, it[1] as Long, it[2] as Long, it[3] as Long, it[4] as Double, it[5] as Long, it[6] as Long, Duration.ZERO, Duration.ZERO)
+                    }
+                }
+            }else{
+                torrentsStatsDB.thenApply { db ->
+                    storageManager.setExists(db, hash)
+                }
+                CompletableFuture.completedFuture(TorrentStats(0, 0, 0, 0, 0.0, 0, 0, Duration.ZERO, Duration.ZERO))
             }
         }
     }
