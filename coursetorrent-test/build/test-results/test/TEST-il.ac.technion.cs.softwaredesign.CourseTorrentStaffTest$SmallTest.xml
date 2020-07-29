@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest$SmallTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2020-07-27T10:00:20" hostname="NADAV-LAPTOP" time="0.813">
+  <properties/>
+  <testcase name="announce to server()" classname="il.ac.technion.cs.softwaredesign.CourseTorrentStaffTest$SmallTest" time="0.813"/>
+  <system-out><![CDATA[In handle
+dfe8b0cfd81c4b05fb96ec6b63c041bacce10263
+127, 0, 0, 1, 27, 57
+]]></system-out>
+  <system-err><![CDATA[2020-07-27 13:00:20.703:INFO::Test worker: Logging initialized @2457ms to org.eclipse.jetty.util.log.StdErrLog
+2020-07-27 13:00:20.810:INFO:oejs.Server:Test worker: jetty-9.4.30.v20200611; built: 2020-06-11T12:34:51.929Z; git: 271836e4c1f4612f12b7bb13ef5a92a927634b0d; jvm 14.0.1+7
+2020-07-27 13:00:20.865:INFO:oejs.AbstractConnector:Test worker: Started ServerConnector@2cbbd1bc{HTTP/1.1, (http/1.1)}{0.0.0.0:8082}
+2020-07-27 13:00:20.867:INFO:oejs.Server:Test worker: Started @2621ms
+2020-07-27 13:00:21.297:INFO:oejs.AbstractConnector:Test worker: Stopped ServerConnector@2cbbd1bc{HTTP/1.1, (http/1.1)}{0.0.0.0:8082}
+]]></system-err>
+</testsuite>
